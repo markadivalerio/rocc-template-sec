@@ -109,5 +109,6 @@ AC_CONFIG_FILES([riscv-spike.pc])
 AC_CONFIG_FILES([riscv-riscv.pc])
 AC_CONFIG_FILES([riscv-softfloat.pc])
 AC_CONFIG_FILES([riscv-dummy_rocc.pc])
+AC_CONFIG_FILES([riscv-sha3.pc])
 AC_CONFIG_FILES([riscv-spike_main.pc])
 AC_OUTPUT
