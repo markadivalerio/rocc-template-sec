@@ -8,7 +8,7 @@ OBJ := $(OBJ:.c=.rv)
 all: $(OBJ)
 
 %.rv: %.c
-	$(CC) -c -o $@ $< $(CFLAGS)
+	$(CC) -o $@ $< $(CFLAGS)
 
 clean:
 	rm -rf $(OBJ)
