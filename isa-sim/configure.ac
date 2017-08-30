@@ -51,6 +51,9 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_CHECK_TOOL([AR],[ar])
 AC_CHECK_TOOL([RANLIB],[ranlib])
+AC_PATH_PROG([DTC],[dtc],[no])
+AS_IF([test x"$DTC" == xno],AC_MSG_ERROR([device-tree-compiler not found]))
+AC_DEFINE_UNQUOTED(DTC, ["$DTC"], [Path to the device-tree-compiler])
 
 AC_C_BIGENDIAN(AC_MSG_ERROR([Spike requires a little-endian host]))
 
@@ -83,7 +86,7 @@ AC_SUBST([CXXFLAGS],["-Wall -Wno-unused -g -O2 -std=c++11"])
 # The '*' suffix indicates an optional subproject. The '**' suffix
 # indicates an optional subproject which is also the name of a group.
 
-MCPPBS_SUBPROJECTS([ riscv, sha3, dummy_rocc, softfloat, spike_main ])
+MCPPBS_SUBPROJECTS([ riscv, dummy_rocc, sha3, softfloat, spike_main ])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject groups
@@ -106,6 +109,5 @@ AC_CONFIG_FILES([riscv-spike.pc])
 AC_CONFIG_FILES([riscv-riscv.pc])
 AC_CONFIG_FILES([riscv-softfloat.pc])
 AC_CONFIG_FILES([riscv-dummy_rocc.pc])
-AC_CONFIG_FILES([riscv-sha3.pc])
 AC_CONFIG_FILES([riscv-spike_main.pc])
 AC_OUTPUT
