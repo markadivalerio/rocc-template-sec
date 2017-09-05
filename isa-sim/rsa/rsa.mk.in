@@ -1,0 +1,12 @@
+rsa_subproject_deps = \
+	riscv \
+
+rsa_install_prog_srcs = \
+
+rsa_hdrs = \
+	rsa.h \
+
+rsa_srcs = \
+	rsa.cc \
+
+rsa_test_srcs =

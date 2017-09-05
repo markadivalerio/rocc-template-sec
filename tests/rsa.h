@@ -1,5 +1,5 @@
-#ifndef __AES_H
-#define __AES_H
+#ifndef __RSA_H
+#define __RSA_H
 
 #include <stdint.h>
 #include <stdio.h>
@@ -41,5 +41,8 @@
 // Standard macro that passes rd, rs1, and rs2 via registers
 #define ROCC_INSTRUCTION(X, rd, rs1, rs2, funct)                \
     ROCC_INSTRUCTION_R_R_R(X, rd, rs1, rs2, funct, 10, 11, 12)
+
+#define RSA_KEY_BYTES 16
+#define RSA_KEY_HALF_WORDS RSA_KEY_BYTES/2
 
 #endif

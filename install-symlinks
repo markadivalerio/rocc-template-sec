@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 #see LICENSE for license
 
-cd ../ && ln -s rocc-template aes
-#mv Makefrag Makefrag.old && ln -s aes/config/Makefrag Makefrag
-cd riscv-tools/riscv-isa-sim && ln -s ../../aes/isa-sim/aes aes
-mv configure.ac configure.ac.old && ln -s ../../aes/isa-sim/configure.ac && ln -s ../../aes/isa-sim/riscv-aes.pc.in riscv-aes.pc.in
-#cd ../../src/main/scala && ln -s ../../../aes/config/PrivateConfigs.scala PrivateConfigs.scala
+cd ../ && ln -s rocc-template rsa
+#mv Makefrag Makefrag.old && ln -s rsa/config/Makefrag Makefrag
+cd riscv-tools/riscv-isa-sim && ln -s ../../rsa/isa-sim/rsa rsa
+mv configure.ac configure.ac.old && ln -s ../../rsa/isa-sim/configure.ac && ln -s ../../rsa/isa-sim/riscv-rsa.pc.in riscv-rsa.pc.in
+#cd ../../src/main/scala && ln -s ../../../rsa/config/PrivateConfigs.scala PrivateConfigs.scala

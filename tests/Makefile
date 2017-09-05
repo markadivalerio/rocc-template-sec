@@ -1,5 +1,5 @@
 CC = riscv64-unknown-elf-gcc
-CFLAGS ?= 
+CFLAGS ?= -lm
 OBJ := $(wildcard *.c)
 OBJ := $(OBJ:.c=.rv)
 

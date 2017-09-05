@@ -1,6 +1,6 @@
 //see LICENSE for license
-#ifndef _RISCV_SHA3_ROCC_H
-#define _RISCV_SHA3_ROCC_H
+#ifndef _RISCV_RSA_ROCC_H
+#define _RISCV_RSA_ROCC_H
 
 #include "rocc.h"
 #include "mmu.h"
@@ -10,12 +10,12 @@
 #include <string.h>
 
 
-class aes_t : public rocc_t
+class rsa_t : public rocc_t
 {
 public:
-  aes_t() {};
+  rsa_t() {};
 
-  const char* name() { return "aes"; }
+  const char* name() { return "rsa"; }
 
   void reset()
   {
@@ -33,5 +33,5 @@ public:
     return -1; // accelerator currently returns nothing
   }
 };
-REGISTER_EXTENSION(aes, []() { return new aes_t; })
+REGISTER_EXTENSION(rsa, []() { return new rsa_t; })
 #endif

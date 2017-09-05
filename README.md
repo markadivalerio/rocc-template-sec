@@ -10,20 +10,20 @@ You can then test it using the emulator
 
     cd ../emulator && make CONFIG=AesDefaultConfig run-asm-tests
 
-You can emulate the software implementation of aes by running
+You can emulate the software implementation of rsa by running
 
-    ./emulator-Top-AesDefaultConfig pk ../aes/tests/aes-sw.rv +dramsim
+    ./emulator-Top-AesDefaultConfig pk ../rsa/tests/rsa-sw.rv +dramsim
 
 or
 
-    ./emulator-Top-AesDefaultConfig pk ../aes/tests/aes-sw-bm.rv +dramsim
+    ./emulator-Top-AesDefaultConfig pk ../rsa/tests/rsa-sw-bm.rv +dramsim
 
-You can emulate the accelerated aes by running
+You can emulate the accelerated rsa by running
 
-    ./emulator-Top-AesDefaultConfig pk ../aes/tests/aes-rocc-bm.rv +dramsim
+    ./emulator-Top-AesDefaultConfig pk ../rsa/tests/rsa-rocc-bm.rv +dramsim
 
 or 
 
-    ./emulator-Top-AesDefaultConfig pk ../aes/tests/aes-rocc.rv +dramsim
+    ./emulator-Top-AesDefaultConfig pk ../rsa/tests/rsa-rocc.rv +dramsim
 
 The -bm versions of the code omit the print statements and will complete faster.
