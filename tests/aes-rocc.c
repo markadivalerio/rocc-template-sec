@@ -36,5 +36,6 @@ int main() {
 
     // Check result
     assert(memcmp(enc_buf, ciphertext[0], 32) == 0);
+    assert(memcmp(decrypted_text, plaintext[0], 32) == 0);
     return 0;
 }
