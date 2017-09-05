@@ -1,0 +1,12 @@
+aes_subproject_deps = \
+	riscv \
+
+aes_install_prog_srcs = \
+
+aes_hdrs = \
+	aes.h \
+
+aes_srcs = \
+	aes.cc \
+
+aes_test_srcs =

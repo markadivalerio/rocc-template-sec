@@ -8,22 +8,22 @@ If cloned into rocket-chip directory use
 
 You can then test it using the emulator
 
-    cd ../emulator && make CONFIG=Sha3DefaultConfig run-asm-tests
+    cd ../emulator && make CONFIG=AesDefaultConfig run-asm-tests
 
-You can emulate the software implementation of sha3 by running
+You can emulate the software implementation of aes by running
 
-    ./emulator-Top-Sha3DefaultConfig pk ../sha3/tests/sha3-sw.rv +dramsim
+    ./emulator-Top-AesDefaultConfig pk ../aes/tests/aes-sw.rv +dramsim
 
 or
 
-    ./emulator-Top-Sha3DefaultConfig pk ../sha3/tests/sha3-sw-bm.rv +dramsim
+    ./emulator-Top-AesDefaultConfig pk ../aes/tests/aes-sw-bm.rv +dramsim
 
-You can emulate the accelerated sha3 by running
+You can emulate the accelerated aes by running
 
-    ./emulator-Top-Sha3DefaultConfig pk ../sha3/tests/sha3-rocc-bm.rv +dramsim
+    ./emulator-Top-AesDefaultConfig pk ../aes/tests/aes-rocc-bm.rv +dramsim
 
 or 
 
-    ./emulator-Top-Sha3DefaultConfig pk ../sha3/tests/sha3-rocc.rv +dramsim
+    ./emulator-Top-AesDefaultConfig pk ../aes/tests/aes-rocc.rv +dramsim
 
 The -bm versions of the code omit the print statements and will complete faster.
