@@ -1,6 +1,6 @@
 //see LICENSE for license
-#ifndef _RISCV_SHA3_ROCC_H
-#define _RISCV_SHA3_ROCC_H
+#ifndef _RISCV_AES_ROCC_H
+#define _RISCV_AES_ROCC_H
 
 #include "rocc.h"
 #include "mmu.h"
