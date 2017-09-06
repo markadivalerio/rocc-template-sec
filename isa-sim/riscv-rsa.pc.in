@@ -3,8 +3,8 @@ exec_prefix=@prefix@
 libdir=${prefix}/@libdir@
 includedir=${prefix}/@includedir@
 
-Name: riscv-aes
-Description: AES
+Name: riscv-rsa
+Description: RSA
 Version: git
 Libs: -Wl,-rpath,${libdir} -L${libdir} -ldummy_rocc
 Cflags: -I${includedir}
