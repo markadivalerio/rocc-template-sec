@@ -10,6 +10,7 @@
 #include "aes.h"
 
 int main() {
+    //DO NOT MODIFY
     unsigned char enc_buf[128];
     unsigned char plaintext[1][32] = {
 	    {0x6b,0xc1,0xbe,0xe2,0x2e,0x40,0x9f,0x96,0xe9,0x3d,0x7e,0x11,0x73,0x93,0x17,0x2a,0xae,0x2d,0x8a,0x57,0x1e,0x03,0xac,0x9c,0x9e,0xb7,0x6f,0xac,0x45,0xaf,0x8e,0x51}
@@ -25,17 +26,33 @@ int main() {
     };
 
     unsigned char decrypted_text[32];
+    //END DO NOT MODIFY
 
     int dummy_result;
 
-    asm volatile ("fence");
+
+    unsigned long long initCycle, duration;
+    initCycle = rdcycle();
+    asm volatile ("fence"); //NOTE: fences are only needed if the accelerator is accessing memory
     //YOUR CODE HERE: Invoke your AES acclerator, write the encrypted output of plaintext to enc_buf
     asm volatile ("fence");
+
+    //DO NOT MODIFY
+    duration = rdcycle() - initCycle;
+    printf("AES Encryption took %llu cycles!\n", duration);
+    initCycle = rdcycle();
+    //END DO NOT MODIFY
+
     //YOUR CODE HERE: Invoke your AES acclerator, write the decrypted output of enc_buf to decrypted_text
     asm volatile ("fence");
+
+    //DO NOT MODIFY
+    duration = rdcycle() - initCycle;
+    printf("AES Encryption took %llu cycles!\n", duration);
 
     // Check result
     assert(memcmp(enc_buf, ciphertext[0], 32) == 0);
     assert(memcmp(decrypted_text, plaintext[0], 32) == 0);
+    //END DO NOT MODIFY
     return 0;
 }
