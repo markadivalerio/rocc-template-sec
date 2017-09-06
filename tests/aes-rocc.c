@@ -48,7 +48,7 @@ int main() {
 
     //DO NOT MODIFY
     duration = rdcycle() - initCycle;
-    printf("AES Encryption took %llu cycles!\n", duration);
+    printf("AES Decryption took %llu cycles!\n", duration);
 
     // Check result
     assert(memcmp(enc_buf, ciphertext[0], 32) == 0);
