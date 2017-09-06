@@ -25,20 +25,34 @@ int main() {
 /* exponent2: 12850891953204883393 (0xb2578a24fdb3efc1) */
 /* coefficient: 10155582946292377246 (0x8cefe0e210c5a69e) */
 
+    //DO NOT MODIFY
     unsigned __int128 modulus = (0xe037d35a8b160eb7LL << 32) | 0xf11919bfef440917LL;
     unsigned __int128 privateExp = (0x00cab10ccaa4437b67LL << 32) |  0x11c977a277fe00a1LL;
     unsigned __int128 pubExp = 65537;
     const char plaintext[] = "Hello !";
     unsigned __int128 ciphertext;
     unsigned __int128 decrypted;
+    //END DO NOT MODIFY
     int dummy_result;
 
-    /* asm volatile ("fence"); */
+    unsigned long long initCycle, duration;
+    initCycle = rdcycle();
+    asm volatile ("fence"); //NOTE that fences are only needed if your accelerator accesses memory
     /* YOUR CODE HERE: Invoke your RSA acclerator, write the encrypted output of plaintext to ciphertext */
-    /* asm volatile ("fence"); */
-    /* YOUR CODE HERE: Invoke your RSA acclerator, write the decrypted output of ciphertext to decrypted */
-    /* asm volatile ("fence"); */
+    asm volatile ("fence");
 
+    //DO NOT MODIFY
+    duration = rdcycle() - initCycle;
+    printf("RSA Encryption took %llu cycles!\n", duration);
+    initCycle = rdcycle();
+    //END DO NOT MODIFY
+
+    /* YOUR CODE HERE: Invoke your RSA acclerator, write the decrypted output of ciphertext to decrypted */
+    asm volatile ("fence");
+
+    //DO NOT MODIFY
+    duration = rdcycle() - initCycle;
+    printf("RSA Decryption took %llu cycles!\n", duration);
 
     char *decrypted_text = (char*)&decrypted;
     printf("decrypted=%s\n", decrypted_text);
