@@ -9,6 +9,12 @@
 #include <stdint.h>
 #include <math.h>
 #include "rsa.h"
+#include <stdint.h>
+
+typedef struct uint128 {
+  uint64_t hi;
+  uint64_t lo;
+} uint128;
 
 int main() {
 /* Private-Key: (128 bit)                                                                                                                                         */
@@ -26,16 +32,18 @@ int main() {
 /* coefficient: 10155582946292377246 (0x8cefe0e210c5a69e) */
 
     //DO NOT MODIFY
-    unsigned __int128 modulus = (0xe037d35a8b160eb7LL << 32) | 0xf11919bfef440917LL;
-    unsigned __int128 privateExp = (0x00cab10ccaa4437b67LL << 32) |  0x11c977a277fe00a1LL;
-    unsigned __int128 pubExp = 65537;
+    uint128 modulus = {0xe037d35a8b160eb7LL,  0xf11919bfef440917LL};
+    uint128 privateExp = {0x00cab10ccaa4437b67LL,  0x11c977a277fe00a1LL};
+    uint64_t pubExp = 65537;
     const char plaintext[] = "Hello !";
-    unsigned __int128 ciphertext;
-    unsigned __int128 decrypted;
+    uint128 ciphertext;
+    uint128 decrypted;
     //END DO NOT MODIFY
     int dummy_result;
 
-    unsigned long long initCycle, duration;
+    uint128 mymod = {0xe037d35a8b160eb7LL, 0xf11919bfef440917};
+
+    uint64_t initCycle, duration;
     initCycle = rdcycle();
     asm volatile ("fence"); //NOTE that fences are only needed if your accelerator accesses memory
     /* YOUR CODE HERE: Invoke your RSA acclerator, write the encrypted output of plaintext to ciphertext */
