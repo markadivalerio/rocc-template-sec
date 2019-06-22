@@ -94,7 +94,7 @@ void substitute_bytes(unsigned char state[4][4], bool inverse)
 	{
 		for(c = 0; c < 4; c++)
 		{
-			state[r][c] = substitute_box[a[r][c]];
+			state[r][c] = substitute_box[state[r][c]];
 		}
 	}
 }
@@ -175,7 +175,6 @@ void add_round_key(unsigned char state[4][4], unsigned char * round_key, int rou
 	{
 		for(j = 0; j < 4; j++)
 		{
-			// a[i][j] ^= round_key[i][j];
 			state[i][j] ^= round_key[(round * 4 * 4) + (i * 4) + j];
 		}
 	}
@@ -239,24 +238,25 @@ void encrypt(unsigned char cipher_key[32], unsigned char * plaintext, unsigned c
 	bool inverse = false;
 	unsigned char *round_key;
 	/* begin with a key addition*/
-	add_round_key(state, rk[0], 0);
+	key_expansion(cipher_key, round_key, 0);
+	add_round_key(state, round_key[0], 0);
 	/* ROUNDS-1 ordinary rounds*/
 	for(round_number = 0; round_number < 10; r++)
 	{
-		substitute_bytes(state, S);
+		substitute_bytes(state, inverse);
 		shift_rows(state, inverse);
 		mix_columns(state, inverse);
 		add_round_key(inverse, round_key[round_number], round_number);
 	}
 	/* Last round is special: there is no mix_columns*/
-	substitute_bytes(a, S);
-	shift_rows(a, 0);
-	add_round_key(a, round_key[round_number]);
+	substitute_bytes(state, inverse);
+	shift_rows(state, inverse);
+	add_round_key(state, round_key[round_number]);
 }
 
-void decrypt()
+void decrypt(unsigned char *cipher_key, unsigned char *ciphertext, unsigned char * enc_buf)
 {
-	int r;
+	int round;
 	bool inverse = true;
 	/* To decrypt:
 	 *   apply the inverse operations of the encrypt routine,
@@ -273,24 +273,39 @@ void decrypt()
 	 *   with extra AddRoundKey
 	*/
 
-	AddRoundKey(a,rk[ROUNDS]);
-	SubBytes(a,Si);
-	ShiftRows(a,1);
+	add_round_key(state, round_key, 10);
+	shift_rows(state, inverse);
 
 	/* ROUNDS-1 ordinary rounds*/
-	for(r = ROUNDS-1;r>0;r--)
+	for(round = 9;round > 0; round--)
 	{
-		AddRoundKey(a,rk[r]);
-		InvMixColumns(a);
-		SubBytes(a,Si);
-		ShiftRows(a,1);
+		add_round_key(state, round_key, round);
+		mix_columns(state, inverse);
+		substitute_bytes(state, inverse);
+		shift_rows(state, inverse);
 	}
 
 	/* End with the extra key addition*/
-	AddRoundKey(a,rk[0]);
+	add_round_key(state, round_key[0], 0);
 }
 
 void main()
 {
+	unsigned char * plaintext = "Hello !";
+	 unsigned char enc_buf[128];
+    // unsigned char plaintext[1][32] = {
+	   //  {0x6b,0xc1,0xbe,0xe2,0x2e,0x40,0x9f,0x96,0xe9,0x3d,0x7e,0x11,0x73,0x93,0x17,0x2a,0xae,0x2d,0x8a,0x57,0x1e,0x03,0xac,0x9c,0x9e,0xb7,0x6f,0xac,0x45,0xaf,0x8e,0x51}
+    // };
+    unsigned char ciphertext[1][32] = {
+	    {0x60,0x1e,0xc3,0x13,0x77,0x57,0x89,0xa5,0xb7,0xa7,0xf5,0x04,0xbb,0xf3,0xd2,0x28,0xf4,0x43,0xe3,0xca,0x4d,0x62,0xb5,0x9a,0xca,0x84,0xe9,0x90,0xca,0xca,0xf5,0xc5}
+    };
+    unsigned char iv[1][16] = {
+	    {0xf0,0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8,0xf9,0xfa,0xfb,0xfc,0xfd,0xfe,0xff},
+    };
+    unsigned char key[1][32] = {
+	    {0x60,0x3d,0xeb,0x10,0x15,0xca,0x71,0xbe,0x2b,0x73,0xae,0xf0,0x85,0x7d,0x77,0x81,0x1f,0x35,0x2c,0x07,0x3b,0x61,0x08,0xd7,0x2d,0x98,0x10,0xa3,0x09,0x14,0xdf,0xf4}
+    };
 
+    encrypt(key[1], plaintext, enc_buf);
+    printf("%s", enc_buf);
 }
