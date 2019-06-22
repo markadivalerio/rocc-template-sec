@@ -34,4 +34,9 @@ public:
   }
 };
 REGISTER_EXTENSION(aes, []() { return new aes_t; })
+
+#define encrypt(unsigned char cipher_key[32], unsigned char * plaintext, unsigned char * enc_buf)
+
+
+
 #endif
