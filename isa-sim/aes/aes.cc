@@ -86,10 +86,11 @@ void substitute_bytes(unsigned char state[4][4], bool inverse)
 {
 	/* Replace every byte of the input by the byte at that place* in the non-linear S-box*/
 	int c, r;
-	unsigned char substitute_box[256] = sbox;
+	unsigned char * substitute_box = new unsigned char[256];
 	if(inverse)
-		substitute_box = rsbox;
-
+		memcpy(substitute_box, rsbox, sizeof(substitute_box));
+	else
+		memcpy(substitute_box, sbox, sizeof(substitute_box));
 	for(r = 0; r < 4; r++)
 	{
 		for(c = 0; c < 4; c++)
@@ -99,19 +100,10 @@ void substitute_bytes(unsigned char state[4][4], bool inverse)
 	}
 }
 
-void shift_rows(unsigned char state[4][4], bool inverse)
-{
-	int c, r;
-	for(r = 1; r < 4; r++) // row 0 does not shift.
-	{
-		state[r] = shift_right(state[r], r, inverse);
-	}
-}
-
-unsigned char* shift_row(unsigned char row[4], signed int delta, bool inverse)
+unsigned char * shift_row(unsigned char row[4], signed int delta, bool inverse)
 //shifts single row left (inverse=false) or right (inverse=true)
 {
-	unsigned char temp[4];
+	unsigned char * temp = new unsigned char[4];
 	if(delta == 0)
 		return row;
 	if(!inverse)
@@ -128,12 +120,24 @@ unsigned char* shift_row(unsigned char row[4], signed int delta, bool inverse)
 	return temp;
 }
 
-void mul_column(unsigned char col[4], int row, bool inverse)
+void shift_rows(unsigned char state[4][4], bool inverse)
 {
-	unsigned char temp[4];
-	unsigned char mult_col_box[4][4] = mc_box;
+        signed int r;
+        for(r = 1; r < 4; r++) // row 0 does not shift.
+        {
+                *state[r] = *shift_row(state[r], r, inverse);
+        }
+}
+
+
+unsigned char mul_column(unsigned char col[4], int row, bool inverse)
+{
+	unsigned char * temp = new unsigned char[4];
+	unsigned char mult_col_box[4][4] = {{0}};
 	if(inverse)
-		mult_col_box = rmc_box;
+		memcpy(mult_col_box, rmc_box, sizeof(mult_col_box));
+	else
+		memcpy(mult_col_box, mc_box, sizeof(mult_col_box));
 	unsigned char res = (
 		(col[0] * mult_col_box[row][0])
 		+ (col[1] * mult_col_box[row][1])
@@ -154,7 +158,7 @@ void mul_column(unsigned char col[4], int row, bool inverse)
 
 void mix_columns(unsigned char state[4][4], bool inverse)
 {
-	unsigned char temp[4][4];
+	unsigned char ** temp = new unsigned char[4][4];
 	int r, c;
 	for(c = 0; c < 4; c++)
 	{
@@ -164,7 +168,7 @@ void mix_columns(unsigned char state[4][4], bool inverse)
 			temp[r][c] = mul_column(col, r, inverse);
 		}
 	}
-	a = temp;
+	*state = *temp;
 }
 
 void add_round_key(unsigned char state[4][4], unsigned char * round_key, int round)
@@ -187,12 +191,12 @@ unsigned char * rotate_word(unsigned char word[4])
 	word[1] = word[2];
 	word[2] = word[3];
 	word[3] = temp;
-	return temp;
+	return word;
 }
 
 unsigned char * sub_word(unsigned char word[4])
 {
-	unsigned char temp[4];
+	unsigned char * temp = new unsigned char[4];
 	temp[0] = sbox[word[0]];
 	temp[1] = sbox[word[1]];
 	temp[2] = sbox[word[2]];
@@ -203,7 +207,7 @@ unsigned char * sub_word(unsigned char word[4])
 void key_expansion(unsigned char key[32], unsigned char *round_key, int round_number)
 {
 	int i,j;
-	unsigned char temp[4];
+	unsigned char * temp = new unsigned char[4];
 	for(i=0;i<4;i++)
 	{
 		round_key[(i * 4) + 0] = key[(i * 4) + 0];
@@ -236,12 +240,17 @@ void encrypt(unsigned char cipher_key[32], unsigned char * plaintext, unsigned c
 {
 	int round_number;
 	bool inverse = false;
+	unsigned char** state = new unsigned char*[rowCount];
+	for(int i = 0; i < 4; ++i)
+    		state[i] = new unsigned char[4];
+	
+	//*state = *plaintext;
 	unsigned char *round_key;
 	/* begin with a key addition*/
 	key_expansion(cipher_key, round_key, 0);
 	add_round_key(state, round_key[0], 0);
 	/* ROUNDS-1 ordinary rounds*/
-	for(round_number = 0; round_number < 10; r++)
+	for(round_number = 0; round_number < 10; round_number++)
 	{
 		substitute_bytes(state, inverse);
 		shift_rows(state, inverse);
@@ -272,10 +281,16 @@ void decrypt(unsigned char *cipher_key, unsigned char *ciphertext, unsigned char
 	 *   without InvMixColumns
 	 *   with extra AddRoundKey
 	*/
+	unsigned char** state = new unsigned char*[rowCount];
+        for(int i = 0; i < 4; ++i)
+                state[i] = new unsigned char[4];
 
+	unsigned char *round_key;
+        /* begin with a key addition*/
+        key_expansion(cipher_key, round_key, 0);
+	
 	add_round_key(state, round_key, 10);
 	shift_rows(state, inverse);
-
 	/* ROUNDS-1 ordinary rounds*/
 	for(round = 9;round > 0; round--)
 	{
@@ -289,9 +304,10 @@ void decrypt(unsigned char *cipher_key, unsigned char *ciphertext, unsigned char
 	add_round_key(state, round_key[0], 0);
 }
 
-void main()
+int main()
 {
-	unsigned char * plaintext = "Hello !";
+	unsigned char pt[] = "Hello !";
+	unsigned char * plaintext = pt;
 	 unsigned char enc_buf[128];
     // unsigned char plaintext[1][32] = {
 	   //  {0x6b,0xc1,0xbe,0xe2,0x2e,0x40,0x9f,0x96,0xe9,0x3d,0x7e,0x11,0x73,0x93,0x17,0x2a,0xae,0x2d,0x8a,0x57,0x1e,0x03,0xac,0x9c,0x9e,0xb7,0x6f,0xac,0x45,0xaf,0x8e,0x51}
@@ -308,4 +324,6 @@ void main()
 
     encrypt(key[1], plaintext, enc_buf);
     printf("%s", enc_buf);
+    
+    return 0;
 }
