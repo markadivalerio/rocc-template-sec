@@ -44,7 +44,8 @@ int main() {
     //END DO NOT MODIFY
 
     //YOUR CODE HERE: Invoke your AES acclerator, write the decrypted output of enc_buf to decrypted_text
-    encrypt(key[1], plaintext, enc_buf);
+    unsigned char * plaintext2 = "Hello !";
+	encrypt(key[1], plaintext2, enc_buf);
     printf("%s", enc_buf);
     asm volatile ("fence");
     //DO NOT MODIFY

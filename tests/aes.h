@@ -66,4 +66,16 @@
 #define rdcycle() read_csr(cycle)
 #define rdinstret() read_csr(instret)
 
+void substitute_bytes(unsigned char *, _Bool);
+unsigned char * shift_row(unsigned char *, signed int, _Bool);
+void shift_rows(unsigned char *, _Bool);
+unsigned char mul_column(unsigned char, int, _Bool);
+void mix_columns(unsigned char *, _Bool);
+void add_round_key(unsigned char *, unsigned char *, int);
+unsigned char * rotate_word(unsigned char *);
+unsigned char * sub_word(unsigned char *);
+void key_expansion(unsigned char *, unsigned char *, int);
+void encrypt(unsigned char *, unsigned char *, unsigned char *);
+void decrypt(unsigned char *, unsigned char *, unsigned char *);
+
 #endif

@@ -35,8 +35,17 @@ public:
 };
 REGISTER_EXTENSION(aes, []() { return new aes_t; })
 
-#define encrypt(unsigned char cipher_key[32], unsigned char * plaintext, unsigned char * enc_buf)
 
-
+void substitute_bytes(unsigned char *, bool);
+unsigned char * shift_row(unsigned char *, signed int, bool);
+void shift_rows(unsigned char *, bool);
+unsigned char mul_column(unsigned char, int, bool);
+void mix_columns(unsigned char *, bool);
+void add_round_key(unsigned char *, unsigned char *, int);
+unsigned char * rotate_word(unsigned char *);
+unsigned char * sub_word(unsigned char *);
+void key_expansion(unsigned char *, unsigned char *, int);
+void encrypt(unsigned char *, unsigned char *, unsigned char *);
+void decrypt(unsigned char *, unsigned char *, unsigned char *);
 
 #endif
