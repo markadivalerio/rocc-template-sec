@@ -11,19 +11,6 @@
 #include "rsa.h"
 #include <stdint.h>
 
-typedef struct uint128 {
-  uint64_t hi;
-  uint64_t lo;
-} uint128;
-
-typedef struct rsaData {
-    uint128 prime1;
-    uint128 prime2;
-    uint64_t pubExp;
-    uint128 privateExp;
-    uint128 mod;
-}
-
 int main() {
 /* Private-Key: (128 bit)                                                                                                                                         */
 /* modulus: */
@@ -59,22 +46,23 @@ int main() {
     // rd_n, rs_1, and rs2_n are the register numbers to use
     //ROCC_INSTRUCTION_R_R_R(X, rd, rs1, rs2, funct);
 
-    rsaData = {
-        {0ULL, 0xfb8aafffd4b02ac7ULL},
-        {0ULL, 0xe43129c94cf45f31ULL},
-        65537UL,
-        {0x00cab10ccaa4437b67ULL,  0x11c977a277fe00a1ULL},
-        {0xe037d35a8b160eb7ULL, 0xf11919bfef440917ULL}
+    rsaData rsa = {
+        {0ULL, 0xfb8aafffd4b02ac7ULL}, //prime1
+        {0ULL, 0xe43129c94cf45f31ULL}, //prime2
+        65537UL, //pubExp
+        {0x00cab10ccaa4437b67ULL,  0x11c977a277fe00a1ULL}, //privateExp
+        {0ULL, 0xcbfe03ULL} //mod
     };
-    unsigned char * encrypted = encrypt(rsaData, plaintext);
+    uint64_t encrypted[7];
+    encrypt(rsa, encrypted);
 
-    printf("Encrypted: ");
+    printf("\nEncrypted: ");
     int i=0;
-    for(i=0;encrypted[i] != '\0'; i++)
+    for(i=0;i < 7; i++)
     {
-        printf("%s", encrypted[i]);
+        printf("%lu ", encrypted[i]);
     }
-    printf("\n"):
+    printf("\n");
 
     asm volatile ("fence");
 
