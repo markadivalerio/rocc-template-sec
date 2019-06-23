@@ -63,6 +63,7 @@ public:
   uint64_t mod_exponentiation(uint64_t base, uint64_t expo, uint64_t mod);
   uint64_t * encrypt(rsaData rsa, unsigned char * message);
   unsigned char * decrypt(rsaData rsa, uint64_t * cipher);
+
 };
 REGISTER_EXTENSION(rsa, []() { return new rsa_t; })
 #endif

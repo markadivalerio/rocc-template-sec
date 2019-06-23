@@ -58,6 +58,7 @@ int main() {
     // rd, rs1, and rs2 are data
     // rd_n, rs_1, and rs2_n are the register numbers to use
     //ROCC_INSTRUCTION_R_R_R(X, rd, rs1, rs2, funct);
+
     rsaData = {
         {0ULL, 0xfb8aafffd4b02ac7ULL},
         {0ULL, 0xe43129c94cf45f31ULL},
@@ -74,6 +75,7 @@ int main() {
         printf("%s", encrypted[i]);
     }
     printf("\n"):
+
     asm volatile ("fence");
 
     //DO NOT MODIFY
