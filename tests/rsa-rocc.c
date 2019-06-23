@@ -49,7 +49,7 @@ int main() {
     /* YOUR CODE HERE: Invoke your RSA acclerator, write the encrypted output of plaintext to ciphertext */
     // rd, rs1, and rs2 are data
     // rd_n, rs_1, and rs2_n are the register numbers to use
-    ROCC_INSTRUCTION_R_R_R(X, rd, rs1, rs2, funct);
+    //ROCC_INSTRUCTION_R_R_R(X, rd, rs1, rs2, funct);
     
     asm volatile ("fence");
 
