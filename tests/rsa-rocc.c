@@ -41,7 +41,7 @@ int main() {
     //END DO NOT MODIFY
     int dummy_result;
 
-    uint128 mymod = {0xe037d35a8b160eb7LL, 0xf11919bfef440917};
+    uint128 mymod = {0xe037d35a8b160eb7LL, 0xf11919bfef440917LL};
 
     uint64_t initCycle, duration;
     initCycle = rdcycle();

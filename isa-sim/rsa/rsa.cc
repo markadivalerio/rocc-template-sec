@@ -9,8 +9,23 @@ typedef struct uint128 {
   uint64_t lo;
 } uint128;
 
+typedef struct rsaData {
+    uint128 prime1;
+    uint128 prime2;
+    uint64_t pubExp;
+    uint128 privateExp;
+    uint128 mod;
+}
+
 uint64_t leftmostbit = 0x8000000000000000ULL;
-uint64_trightmostbit = 0x0000000000000001ULL;
+uint64_t rightmostbit = 0x0000000000000001ULL;
+
+bool u128_is_even(uint128 num)
+{
+	if(num.lo & rightmostbit == 0)
+		return true;
+	return false;
+}
 
 uint128 u128_shift_right(uint128 num)
 {
@@ -29,6 +44,19 @@ uint128 u128_shift_left(uint128 num)
     num.lo <<= 1;
     return num;
 }
+
+uint128 u128_xor(uint128 a, uint128 b)
+{
+	uint128 res = {(a.hi ^ b.hi), (a.lo ^ b.lo)};
+    return res;
+}
+
+uint128 u128_and(uint128 a, uint128 b)
+{
+	uint128 res = {(a.hi & b.hi), (a.lo & b.lo)};
+    return res;
+}
+
 
 uint128 u128_subtract(uint128 left, uint128 right)
 {
@@ -90,6 +118,34 @@ uint128 u128_power(uint128 base, uint128 expo)
     return res;
 }
 
+// uint128 u128_gcd(uint128 a, uint128 b)
+// {
+// 	uint128 temp_u = {0x0ULL, 0x1ULL};
+// 	uint128 temp_v = {0x0ULL, 0x0ULL};
+// 	uint128 alpha = a;
+// 	uint128 beta = b;
+
+// 	uint128 result = {0x0ULL, 0x1ULL};
+
+// 	while(a.hi > 0ULL || a.low > 0ULL)
+// 	{
+// 		a = u128_shift_right(a);
+// 		temp_v = u128_shift_right(temp_v);
+// 		if(~u128_is_even(temp_u))
+// 		{
+// 			temp_u = u128_shift_right(temp_u);
+// 		}
+// 		else
+// 		{
+// 			temp_v = u128_add(temp_u, alpha);
+			
+// 			temp_u = u128_xor(temp_u, beta);
+// 			temp_u = u128_shift_right(temp_u);
+
+// 		}
+// 	}
+// }
+
 uint128 big_mod_w_subtract(uint128 numerator, uint128 denominator)
 {
     uint128 result = {};
@@ -126,7 +182,7 @@ uint128 u128_hybrid_mod(uint128 base, uint128 expo, uint128 mod)
             result = u128_multiply(result, base);
             result = big_mod_w_subtract(result, mod);
         }
-        u128_shift_right(expo);
+        expo = u128_shift_right(expo);
         base = u128_multiply(base, base);
         base = big_mod_w_subtract(base, mod);
     }
@@ -166,12 +222,33 @@ uint64_t mod_exponentiation(uint64_t base, uint64_t expo, uint64_t mod)
     return result;
 }
 
-void encrypt()
+uint64_t * encrypt(rsaData rsa, unsigned char * message)
 {
-
+	uint64_t * encrypted;
+	int i;
+	uint64_t base = 0ULL;
+	uint64_t expo = rsa.pubExp;
+	uint64_t mod = rsa.mod.lo;
+	for (i = 0; message[i] != '\0'; i++)
+	{
+		base = (uint64_t)message[i];
+		encrypted[i] = mod_exponentiation(base, expo, mod);
+	}
+	return encrypted;
 }
 
-void decrypt()
+unsigned char * decrypt(rsaData rsa, uint64_t * cipher)
 {
-
+	unsigned char * decrypted='';
+	int i;
+	uint64_t base = 0ULL;
+	uint64_t expo = rsa.privateExp;
+	uint64_t mod = rsa.mod.lo;
+	for (i = 0; cipher[i] != '\0'; i++)
+	{
+		uint64_t temp = mod_exponentiation(cipher[i], expo, mod);
+		decrypted[i] = (unsigned char) temp;
+	}
+	decrypted[i+1] = '\0';
+	return decrypted;
 }
