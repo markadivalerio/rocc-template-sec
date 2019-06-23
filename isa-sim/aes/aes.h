@@ -32,20 +32,20 @@ public:
 
     return -1; // accelerator currently returns nothing
   }
+
+void substitute_bytes(unsigned char * state[4], bool inverse);
+unsigned char * shift_row(unsigned char row[4], signed int delta, bool inverse);
+void shift_rows(unsigned char * state[4], bool inverse);
+unsigned char mul_column(unsigned char col[4], int row, bool inverse);
+void mix_columns(unsigned char * state[4], bool inverse);
+void add_round_key(unsigned char * state[4], unsigned char * round_key, int round);
+unsigned char * rotate_word(unsigned char word[4]);
+unsigned char * sub_word(unsigned char word[4]);
+void key_expansion(unsigned char key[32], unsigned char *round_key, int round_number);
+void encrypt(unsigned char cipher_key[32], unsigned char * plaintext, unsigned char * enc_buf);
+void decrypt(unsigned char *cipher_key, unsigned char *ciphertext, unsigned char * enc_buf);
+
 };
 REGISTER_EXTENSION(aes, []() { return new aes_t; })
-
-
-void substitute_bytes(unsigned char *, bool);
-unsigned char * shift_row(unsigned char *, signed int, bool);
-void shift_rows(unsigned char *, bool);
-unsigned char mul_column(unsigned char, int, bool);
-void mix_columns(unsigned char *, bool);
-void add_round_key(unsigned char *, unsigned char *, int);
-unsigned char * rotate_word(unsigned char *);
-unsigned char * sub_word(unsigned char *);
-void key_expansion(unsigned char *, unsigned char *, int);
-void encrypt(unsigned char *, unsigned char *, unsigned char *);
-void decrypt(unsigned char *, unsigned char *, unsigned char *);
 
 #endif

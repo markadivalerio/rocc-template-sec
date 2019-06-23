@@ -82,7 +82,7 @@ unsigned char rcon[30] = {0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36
 // 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb  };
 
 
-void substitute_bytes(unsigned char * state[4], bool inverse)
+void aes_t::substitute_bytes(unsigned char * state[4], bool inverse)
 {
 	int c, r;
 	unsigned char * substitute_box = new unsigned char[256];
@@ -103,7 +103,7 @@ void substitute_bytes(unsigned char * state[4], bool inverse)
 	}
 }
 
-unsigned char * shift_row(unsigned char row[4], signed int delta, bool inverse)
+unsigned char * aes_t::shift_row(unsigned char row[4], signed int delta, bool inverse)
 //shifts single row left (inverse=false) or right (inverse=true)
 {
 	unsigned char * temp = new unsigned char[4];
@@ -123,7 +123,7 @@ unsigned char * shift_row(unsigned char row[4], signed int delta, bool inverse)
 	return temp;
 }
 
-void shift_rows(unsigned char * state[4], bool inverse)
+void aes_t::shift_rows(unsigned char * state[4], bool inverse)
 {
         signed int r;
         for(r = 1; r < 4; r++) // row 0 does not shift.
@@ -133,7 +133,7 @@ void shift_rows(unsigned char * state[4], bool inverse)
 }
 
 
-unsigned char mul_column(unsigned char col[4], int row, bool inverse)
+unsigned char aes_t::mul_column(unsigned char col[4], int row, bool inverse)
 {
 	unsigned char * temp = new unsigned char[4];
 	unsigned char mult_col_box[4][4] = {{0}};
@@ -159,7 +159,7 @@ unsigned char mul_column(unsigned char col[4], int row, bool inverse)
 	return res;
 }
 
-void mix_columns(unsigned char * state[4], bool inverse)
+void aes_t::mix_columns(unsigned char * state[4], bool inverse)
 {
 	unsigned char temp[4][4] = {{0}};
 	int r, c;
@@ -174,7 +174,7 @@ void mix_columns(unsigned char * state[4], bool inverse)
 	memcpy(state, temp, sizeof(temp));
 }
 
-void add_round_key(unsigned char * state[4], unsigned char * round_key, int round)
+void aes_t::add_round_key(unsigned char * state[4], unsigned char * round_key, int round)
 {
 	/* XOR corresponding text input and round key input bytes*/
 	int i, j;
@@ -187,7 +187,7 @@ void add_round_key(unsigned char * state[4], unsigned char * round_key, int roun
 	}
 }
 
-unsigned char * rotate_word(unsigned char word[4])
+unsigned char * aes_t::rotate_word(unsigned char word[4])
 {
 	unsigned char temp=word[0];
 	word[0] = word[1];
@@ -197,7 +197,7 @@ unsigned char * rotate_word(unsigned char word[4])
 	return word;
 }
 
-unsigned char * sub_word(unsigned char word[4])
+unsigned char * aes_t::sub_word(unsigned char word[4])
 {
 	unsigned char * temp = new unsigned char[4];
 	temp[0] = sbox[word[0]];
@@ -207,7 +207,7 @@ unsigned char * sub_word(unsigned char word[4])
 	return temp;
 }
 
-void key_expansion(unsigned char key[32], unsigned char *round_key, int round_number)
+void aes_t::key_expansion(unsigned char key[32], unsigned char *round_key, int round_number)
 {
 	int i,j;
 	unsigned char * temp = new unsigned char[4];
@@ -241,7 +241,7 @@ void key_expansion(unsigned char key[32], unsigned char *round_key, int round_nu
 }
 
 
-void encrypt(unsigned char cipher_key[32], unsigned char * plaintext, unsigned char * enc_buf)
+void aes_t::encrypt(unsigned char cipher_key[32], unsigned char * plaintext, unsigned char * enc_buf)
 {
 	int round_number;
 	bool inverse = false;
@@ -269,7 +269,7 @@ void encrypt(unsigned char cipher_key[32], unsigned char * plaintext, unsigned c
 	add_round_key(state, round_key, round_number);
 }
 
-void decrypt(unsigned char *cipher_key, unsigned char *ciphertext, unsigned char * enc_buf)
+void aes_t::decrypt(unsigned char *cipher_key, unsigned char *ciphertext, unsigned char * enc_buf)
 {
 	int round;
 	bool inverse = true;
