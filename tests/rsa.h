@@ -86,6 +86,7 @@ typedef struct rsaData {
 } rsaData;
 
 void encrypt(rsaData rsa, uint64_t encrypted[7]);
+void decrypt(rsaData rsa, uint64_t ciphertext[7], uint64_t decrypted[7]);
 
 uint64_t leftmostbit = 0x8000000000000000ULL;
 uint64_t rightmostbit = 0x0000000000000001ULL;
@@ -295,7 +296,6 @@ uint64_t mod_exponentiation(uint64_t base, uint64_t expo, uint64_t mod)
 void encrypt(rsaData rsa, uint64_t encrypted[7])
 {
   unsigned char message[7] = "Hello !";
-  //uint64_t encrypted[7];
   int i;
   uint64_t base = 0ULL;
   uint64_t expo = rsa.pubExp;
@@ -303,31 +303,26 @@ void encrypt(rsaData rsa, uint64_t encrypted[7])
   for (i = 0; i<7; i++)
   {
     base = (uint64_t)message[i];
+    printf("%llu ", base);
     encrypted[i] =  mod_exponentiation(base, expo, mod);
-    printf("%lu ", encrypted[i]);
   }
   
 }
 
-unsigned char * decrypt(rsaData rsa, uint64_t * cipher)
+void decrypt(rsaData rsa, uint64_t ciphertext[7], uint64_t decrypted[7])
 {
-  unsigned char * decrypted;
   int i;
   uint64_t base = 0ULL;
   uint64_t expo = rsa.privateExp.lo;
   uint64_t mod = rsa.mod.lo;
-  for (i = 0; cipher[i] != '\0'; i++)
+  printf("\nDecrypted: ");
+  for (i = 0; i < 7; i++)
   {
-    uint64_t temp = mod_exponentiation(cipher[i], expo, mod);
-    decrypted[i] = (unsigned char) temp;
+    uint64_t temp = mod_exponentiation(ciphertext[i], expo, mod);
+    decrypted[i] = temp;
+    printf("%llu ", temp);
   }
-  decrypted[i+1] = '\0';
-  return decrypted;
 }
-
-
-
-
 
 
 #endif

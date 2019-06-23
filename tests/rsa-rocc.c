@@ -46,14 +46,22 @@ int main() {
     // rd_n, rs_1, and rs2_n are the register numbers to use
     //ROCC_INSTRUCTION_R_R_R(X, rd, rs1, rs2, funct);
 
-    rsaData rsa = {
+/*    rsaData rsa = {
         {0ULL, 0xfb8aafffd4b02ac7ULL}, //prime1
         {0ULL, 0xe43129c94cf45f31ULL}, //prime2
         65537UL, //pubExp
         {0x00cab10ccaa4437b67ULL,  0x11c977a277fe00a1ULL}, //privateExp
         {0ULL, 0xcbfe03ULL} //mod
+    };*/
+    rsaData rsa = {
+	{0ULL, 61ULL}, //prime1
+        {0ULL, 53ULL}, //prime2
+        65537UL, //pubExp
+        {0x00cab10ccaa4437b67ULL,  0x11c977a277fe00a1ULL}, //privateExp
+        {0ULL, 3233ULL} //mod
     };
     uint64_t encrypted[7];
+    uint64_t decrypted2[7];
     encrypt(rsa, encrypted);
 
     printf("\nEncrypted: ");
@@ -73,6 +81,14 @@ int main() {
     //END DO NOT MODIFY
 
     /* YOUR CODE HERE: Invoke your RSA acclerator, write the decrypted output of ciphertext to decrypted */
+    decrypt(rsa, encrypted, decrypted2);
+    printf("\nDecrypted2: ");
+ 	
+    for(i=0;i < 7; i++)
+    {
+        printf("%c ", (char)decrypted2[i]);
+    }
+    printf("\n");
     asm volatile ("fence");
 
     //DO NOT MODIFY
