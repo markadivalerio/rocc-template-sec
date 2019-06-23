@@ -153,8 +153,9 @@ unsigned char rcon[30] = {0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36
 
 void substitute_bytes(unsigned char state[4][4], int inverse)
 {
+	printf("substitute_bytes\n");
 	int c, r;
-	unsigned char * substitute_box[256];
+	unsigned char substitute_box[256];
 	if(inverse)
 	{
 		memcpy(substitute_box, rsbox, sizeof(rsbox));
@@ -176,21 +177,32 @@ void substitute_bytes(unsigned char state[4][4], int inverse)
 unsigned char * shift_row(unsigned char row[4], signed int delta, int inverse)
 //shifts single row left (inverse=false) or right (inverse=true)
 {
-	unsigned char * temp[4];
+	
+	unsigned char temp[4];
 	if(delta == 0)
 		return row;
-	if(!inverse)
-		delta *= -1; // inverse = shift right (aka add)
-
-	for(int c=0;c<4;c++)
+	
+	for(;delta>0;delta--)
 	{
-		int new_loc = (c + delta) % 4;
-		if(new_loc < 0)
-			new_loc += 4;
-		temp[new_loc] = row[c];
+	    if(inverse)
+	    {
+		unsigned char temp = row[3];
+		row[3] = row[2];
+		row[2] = row[1];
+		row[1] = row[0];
+		row[0] = temp;
+	    }
+	    else
+	    {
+		unsigned char temp = row[3];
+                row[3] = row[2];
+                row[2] = row[1];
+                row[1] = row[0];
+                row[0] = temp;
+	    }
 	}
-
-	return temp;
+	
+	return row;
 }
 
 void shift_rows(unsigned char state[4][4], int inverse)
@@ -276,7 +288,7 @@ void sub_word(unsigned char word[4])
 	word = temp;
 }
 
-void key_expansion(unsigned char key[32], unsigned char *round_key, int round_number)
+void key_expansion(unsigned char key[32], unsigned char round_key[128], int round_number)
 {
 	int i,j;
 	unsigned char temp[4];
@@ -318,19 +330,19 @@ void encrypt(unsigned char cipher_key[32], unsigned char * plaintext, unsigned c
 	unsigned char state[4][4];
 	
 	//*state = *plaintext;
-	unsigned char *round_key = {0};
+	unsigned char round_key[128];
 
 	/* begin with a key addition*/
 	key_expansion(cipher_key, round_key, 0);
 	add_round_key(state, round_key, 0);
 	/* ROUNDS-1 ordinary rounds*/
-	for(round_number = 0; round_number < 10; round_number++)
+	/*for(round_number = 0; round_number < 10; round_number++)
 	{
 		substitute_bytes(state, inverse);
 		shift_rows(state, inverse);
 		mix_columns(state, inverse);
 		add_round_key(state, round_key, round_number);
-	}
+	}*/
 	/* Last round is special: there is no mix_columns*/
 	substitute_bytes(state, inverse);
 	shift_rows(state, inverse);

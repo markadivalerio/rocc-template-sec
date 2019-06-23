@@ -35,6 +35,9 @@ int main() {
     initCycle = rdcycle();
     asm volatile ("fence"); //NOTE: fences are only needed if the accelerator is accessing memory
     //YOUR CODE HERE: Invoke your AES acclerator, write the encrypted output of plaintext to enc_buf
+    encrypt(key[1], enc_buf, decrypted_text);
+    //printf("%s", enc_buf);
+
     asm volatile ("fence");
 
     //DO NOT MODIFY
@@ -44,8 +47,7 @@ int main() {
     //END DO NOT MODIFY
 
     //YOUR CODE HERE: Invoke your AES acclerator, write the decrypted output of enc_buf to decrypted_text
-    encrypt(key[1], plaintext[1], enc_buf);
-    printf("%s", enc_buf);
+    //printf("%s", decrypted_text);
     asm volatile ("fence");
     //DO NOT MODIFY
     duration = rdcycle() - initCycle;
