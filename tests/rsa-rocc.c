@@ -16,6 +16,14 @@ typedef struct uint128 {
   uint64_t lo;
 } uint128;
 
+typedef struct rsaData {
+    uint128 prime1;
+    uint128 prime2;
+    uint64_t pubExp;
+    uint128 privateExp;
+    uint128 mod;
+}
+
 int main() {
 /* Private-Key: (128 bit)                                                                                                                                         */
 /* modulus: */
@@ -49,8 +57,23 @@ int main() {
     /* YOUR CODE HERE: Invoke your RSA acclerator, write the encrypted output of plaintext to ciphertext */
     // rd, rs1, and rs2 are data
     // rd_n, rs_1, and rs2_n are the register numbers to use
-    ROCC_INSTRUCTION_R_R_R(X, rd, rs1, rs2, funct);
-    
+    //ROCC_INSTRUCTION_R_R_R(X, rd, rs1, rs2, funct);
+    rsaData = {
+        {0ULL, 0xfb8aafffd4b02ac7ULL},
+        {0ULL, 0xe43129c94cf45f31ULL},
+        65537UL,
+        {0x00cab10ccaa4437b67ULL,  0x11c977a277fe00a1ULL},
+        {0xe037d35a8b160eb7ULL, 0xf11919bfef440917ULL}
+    };
+    unsigned char * encrypted = encrypt(rsaData, plaintext);
+
+    printf("Encrypted: ");
+    int i=0;
+    for(i=0;encrypted[i] != '\0'; i++)
+    {
+        printf("%s", encrypted[i]);
+    }
+    printf("\n"):
     asm volatile ("fence");
 
     //DO NOT MODIFY

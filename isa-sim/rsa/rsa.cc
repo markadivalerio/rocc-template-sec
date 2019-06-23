@@ -20,14 +20,17 @@ typedef struct rsaData {
 uint64_t leftmostbit = 0x8000000000000000ULL;
 uint64_t rightmostbit = 0x0000000000000001ULL;
 
-bool u128_is_even(uint128 num)
+#define TRUE 1
+#define FALSE 0
+
+int rsa_t::u128_is_even(uint128 num)
 {
 	if(num.lo & rightmostbit == 0)
-		return true;
-	return false;
+		return TRUE;
+	return FALSE;
 }
 
-uint128 u128_shift_right(uint128 num)
+uint128 rsa_t::u128_shift_right(uint128 num)
 {
     num.lo >>= 1;
     if(num.hi & rightmostbit == 1)
@@ -36,7 +39,7 @@ uint128 u128_shift_right(uint128 num)
     return num;
 }
 
-uint128 u128_shift_left(uint128 num)
+uint128 rsa_t::u128_shift_left(uint128 num)
 {
     num.hi <<= 1;
     if(num.lo & leftmostbit != 0)
@@ -45,20 +48,20 @@ uint128 u128_shift_left(uint128 num)
     return num;
 }
 
-uint128 u128_xor(uint128 a, uint128 b)
+uint128 rsa_t::u128_xor(uint128 a, uint128 b)
 {
 	uint128 res = {(a.hi ^ b.hi), (a.lo ^ b.lo)};
     return res;
 }
 
-uint128 u128_and(uint128 a, uint128 b)
+uint128 rsa_t::u128_and(uint128 a, uint128 b)
 {
 	uint128 res = {(a.hi & b.hi), (a.lo & b.lo)};
     return res;
 }
 
 
-uint128 u128_subtract(uint128 left, uint128 right)
+uint128 rsa_t::u128_subtract(uint128 left, uint128 right)
 {
     uint128 result = {0ULL, 0ULL};
     if(left.hi < right.hi || (left.hi == right.hi && left.lo < right.lo))
@@ -73,7 +76,7 @@ uint128 u128_subtract(uint128 left, uint128 right)
     return result;
 }
 
-uint128 u128_add(uint128 left, uint128 right)
+uint128 rsa_t::u128_add(uint128 left, uint128 right)
 {
     uint128 result = {0ULL, 0ULL};
     result.hi = left.hi + right.hi;
@@ -84,7 +87,7 @@ uint128 u128_add(uint128 left, uint128 right)
     return result;
 }
 
-uint128 u128_multiply(uint128 a, uint128 b)
+uint128 rsa_t::u128_multiply(uint128 a, uint128 b)
 {
     uint128 res = {0ULL, 0ULL};
     
@@ -101,7 +104,7 @@ uint128 u128_multiply(uint128 a, uint128 b)
     return res; 
 }
 
-uint128 u128_power(uint128 base, uint128 expo)
+uint128 rsa_t::u128_power(uint128 base, uint128 expo)
 {
     uint128 res = {0ULL, 1ULL};
     while(expo.hi > 0ULL || expo.lo > 0ULL)
@@ -146,7 +149,7 @@ uint128 u128_power(uint128 base, uint128 expo)
 // 	}
 // }
 
-uint128 big_mod_w_subtract(uint128 numerator, uint128 denominator)
+uint128 rsa_t::big_mod_w_subtract(uint128 numerator, uint128 denominator)
 {
     uint128 result = {};
     result.hi = numerator.hi;
@@ -165,7 +168,7 @@ uint128 big_mod_w_subtract(uint128 numerator, uint128 denominator)
     return result;
 }
 
-uint128 u128_hybrid_mod(uint128 base, uint128 expo, uint128 mod)
+uint128 rsa_t::u128_hybrid_mod(uint128 base, uint128 expo, uint128 mod)
 {
     uint128 zero = {0ULL, 0ULL};
     uint128 one = {0ULL, 0ULL};
@@ -189,7 +192,7 @@ uint128 u128_hybrid_mod(uint128 base, uint128 expo, uint128 mod)
     return result;
 }
 
-uint64_t mod_exponentiation(uint64_t base, uint64_t expo, uint64_t mod)
+uint64_t rsa_t::mod_exponentiation(uint64_t base, uint64_t expo, uint64_t mod)
 {
     uint64_t result = 1;
     if(mod == 1ULL)
@@ -222,7 +225,7 @@ uint64_t mod_exponentiation(uint64_t base, uint64_t expo, uint64_t mod)
     return result;
 }
 
-uint64_t * encrypt(rsaData rsa, unsigned char * message)
+uint64_t * rsa_t::encrypt(rsaData rsa, unsigned char * message)
 {
 	uint64_t * encrypted;
 	int i;
@@ -237,7 +240,7 @@ uint64_t * encrypt(rsaData rsa, unsigned char * message)
 	return encrypted;
 }
 
-unsigned char * decrypt(rsaData rsa, uint64_t * cipher)
+unsigned char * rsa_t::decrypt(rsaData rsa, uint64_t * cipher)
 {
 	unsigned char * decrypted='';
 	int i;
