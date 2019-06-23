@@ -83,7 +83,9 @@ typedef struct rsaData {
     uint64_t pubExp;
     uint128 privateExp;
     uint128 mod;
-}
+} rsaData;
+
+void encrypt(rsaData rsa, uint64_t encrypted[7]);
 
 uint64_t leftmostbit = 0x8000000000000000ULL;
 uint64_t rightmostbit = 0x0000000000000001ULL;
@@ -285,32 +287,34 @@ uint64_t mod_exponentiation(uint64_t base, uint64_t expo, uint64_t mod)
         // {
         //     result = result % mod;
         // }
-        printf("\n\n");
+        //printf("\n\n");
     }
     return result;
 }
 
-uint64_t * encrypt(rsaData rsa, unsigned char * message)
+void encrypt(rsaData rsa, uint64_t encrypted[7])
 {
-  uint64_t * encrypted;
+  unsigned char message[7] = "Hello !";
+  //uint64_t encrypted[7];
   int i;
   uint64_t base = 0ULL;
   uint64_t expo = rsa.pubExp;
   uint64_t mod = rsa.mod.lo;
-  for (i = 0; message[i] != '\0'; i++)
+  for (i = 0; i<7; i++)
   {
     base = (uint64_t)message[i];
-    encrypted[i] = mod_exponentiation(base, expo, mod);
+    encrypted[i] =  mod_exponentiation(base, expo, mod);
+    printf("%lu ", encrypted[i]);
   }
-  return encrypted;
+  
 }
 
 unsigned char * decrypt(rsaData rsa, uint64_t * cipher)
 {
-  unsigned char * decrypted='';
+  unsigned char * decrypted;
   int i;
   uint64_t base = 0ULL;
-  uint64_t expo = rsa.privateExp;
+  uint64_t expo = rsa.privateExp.lo;
   uint64_t mod = rsa.mod.lo;
   for (i = 0; cipher[i] != '\0'; i++)
   {
