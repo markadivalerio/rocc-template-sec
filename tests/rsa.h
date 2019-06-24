@@ -292,6 +292,177 @@ uint64_t mod_exponentiation(uint64_t base, uint64_t expo, uint64_t mod)
     return result;
 }
 
+
+typedef unsigned long long uint64;
+typedef long long int64;
+
+/* ---------------------------- mulul64 ----------------------------- */
+
+/* Multiply unsigned long 64-bit routine, i.e., 64 * 64 ==> 128.
+Parameters u and v are multiplied and the 128-bit product is placed in
+(*whi, *wlo). It is Knuth's Algorithm M from [Knu2] section 4.3.1.
+Derived from muldwu.c in the Hacker's Delight collection. */
+
+void mulul64(uint64 u, uint64 v, uint64 *whi, uint64 *wlo)
+   {
+   uint64 u0, u1, v0, v1, k, t;
+   uint64 w0, w1, w2;
+
+   u1 = u >> 32; u0 = u & 0xFFFFFFFF;
+   v1 = v >> 32; v0 = v & 0xFFFFFFFF;
+
+   t = u0*v0;
+   w0 = t & 0xFFFFFFFF;
+   k = t >> 32;
+
+   t = u1*v0 + k;
+   w1 = t & 0xFFFFFFFF;
+   w2 = t >> 32;
+
+   t = u0*v1 + w1;
+   k = t >> 32;
+
+   *wlo = (t << 32) + w0;
+   *whi = u1*v1 + w2 + k;
+
+   return;
+}
+
+/* ---------------------------- modul64 ----------------------------- */
+
+uint64 modul64(uint64 x, uint64 y, uint64 z) {
+
+   /* Divides (x || y) by z, for 64-bit integers x, y,
+   and z, giving the remainder (modulus) as the result.
+   Must have x < z (to get a 64-bit result). This is
+   checked for. */
+
+   int64 i, t;
+
+   printf("In modul64, x = %016llx, y = %016llx, z = %016llx\n", x, y, z);
+   if (x >= z) {
+      printf("Bad call to modul64, must have x < z.");
+      exit(1);
+   }
+   for (i = 1; i <= 64; i++) {  // Do 64 times.
+      t = (int64)x >> 63;       // All 1's if x(63) = 1.
+      x = (x << 1) | (y >> 63); // Shift x || y left
+      y = y << 1;               // one bit.
+      if ((x | t) >= z) {
+         x = x - z;
+         y = y + 1;
+      }
+   }
+   return x;                    // Quotient is y.
+}
+
+/* ---------------------------- montmul ----------------------------- */
+
+uint64 montmul(uint64 abar, uint64 bbar, uint64 m,
+               uint64 mprime) {
+
+   uint64 thi, tlo, tm, tmmhi, tmmlo, uhi, ulo, ov;
+
+   printf("\nmontmul, abar = %016llx, bbar   = %016llx\n", abar, bbar);
+   printf("            m = %016llx, mprime = %016llx\n", m, mprime);
+
+   /* t = abar*bbar. */
+
+   mulul64(abar, bbar, &thi, &tlo);  // t = abar*bbar.
+   printf("montmul, thi = %016llx, tlo = %016llx\n", thi, tlo);
+
+   /* Now compute u = (t + ((t*mprime) & mask)*m) >> 64.
+   The mask is fixed at 2**64-1. Because it is a 64-bit
+   quantity, it suffices to compute the low-order 64
+   bits of t*mprime, which means we can ignore thi. */
+
+   tm = tlo*mprime;
+   printf("montmul, tm = %016llx\n", tm);
+
+   mulul64(tm, m, &tmmhi, &tmmlo);   // tmm = tm*m.
+   printf("montmul, tmmhi = %016llx, tmmlo = %016llx\n", tmmhi, tmmlo);
+
+   ulo = tlo + tmmlo;                // Add t to tmm
+   uhi = thi + tmmhi;                // (128-bit add).
+   if (ulo < tlo) uhi = uhi + 1;     // Allow for a carry.
+
+   // The above addition can overflow. Detect that here.
+
+   ov = (uhi < thi) | ((uhi == thi) & (ulo < tlo));
+   printf("montmul, sum, uhi = %016llx, ulo = %016llx, ov = %lld\n", uhi, ulo, ov);
+
+   ulo = uhi;                   // Shift u right
+   uhi = 0;                     // 64 bit positions.
+   printf("montmul, ulo = %016llx\n", ulo);
+
+// if (ov > 0 || ulo >= m)      // If u >= m,
+//    ulo = ulo - m;            // subtract m from u.
+   ulo = ulo - (m & -(ov | (ulo >= m))); // Alternative
+                                // with no branching.
+   printf("montmul, final ulo = %016llx\n", ulo);
+
+   if (ulo >= m)
+      printf("ERROR in montmul, ulo = %016llx, m = %016llx\n", ulo, m);
+   return ulo;
+}
+
+/* ---------------------------- xbinGCD ----------------------------- */
+
+/* C program implementing the extended binary GCD algorithm. C.f.
+http://www.ucl.ac.uk/~ucahcjm/combopt/ext_gcd_python_programs.pdf. This
+is a modification of that routine in that we find s and t s.t.
+    gcd(a, b) = s*a - t*b,
+rather than the same expression except with a + sign.
+   This routine has been greatly simplified to take advantage of the
+facts that in the MM use, argument a is a power of 2, and b is odd. Thus
+there are no common powers of 2 to eliminate in the beginning. The
+parent routine has two loops. The first drives down argument a until it
+is 1, modifying u and v in the process. The second loop modifies s and
+t, but because a = 1 on entry to the second loop, it can be easily seen
+that the second loop doesn't alter u or v. Hence the result we want is u
+and v from the end of the first loop, and we can delete the second loop.
+   The intermediate and final results are always > 0, so there is no
+trouble with negative quantities. Must have a either 0 or a power of 2
+<= 2**63. A value of 0 for a is treated as 2**64. b can be any 64-bit
+value.
+   Parameter a is half what it "should" be. In other words, this function
+does not find u and v st. u*a - v*b = 1, but rather u*(2a) - v*b = 1. */
+
+void xbinGCD(uint64 a, uint64 b, uint64 *pu, uint64 *pv)
+   {
+   uint64 alpha, beta, u, v;
+   printf("Doing GCD(%llx, %llx)\n", a, b);
+
+   u = 1; v = 0;
+   alpha = a; beta = b;         // Note that alpha is
+                                // even and beta is odd.
+
+   /* The invariant maintained from here on is:
+   2a = u*2*alpha - v*beta. */
+
+// printf("Before, a u v = %016llx %016llx %016llx\n", a, u, v);
+   while (a > 0) {
+      a = a >> 1;
+      if ((u & 1) == 0) {             // Delete a common
+         u = u >> 1; v = v >> 1;      // factor of 2 in
+      }                               // u and v.
+      else {
+         /* We want to set u = (u + beta) >> 1, but
+         that can overflow, so we use Dietz's method. */
+         u = ((u ^ beta) >> 1) + (u & beta);
+         v = (v >> 1) + alpha;
+      }
+//    printf("After,  a u v = %016llx %016llx %016llx\n", a, u, v);
+   }
+
+// printf("At end,    a u v = %016llx %016llx %016llx\n", a, u, v);
+   *pu = u;
+   *pv = v;
+   return;
+}
+
+
+
 void encrypt(rsaData rsa, uint64_t encrypted[7])
 {
   unsigned char message[7] = "Hello !";
