@@ -70,7 +70,7 @@
 #define FALSE 0
 #define xtime(x)   ((x<<1) ^ (((x>>7) & 1) * 0x1b))
 
-void print_state(unsigned char state[4][4], int as_grid);
+void print_state(unsigned char state[4][4], int is_grid);
 void encrypt(unsigned char cipher_key[32], unsigned char plaintext[32], unsigned char iv[32], unsigned char * enc_buf);
 
 
@@ -128,7 +128,7 @@ unsigned char rmc_box[4][4] = {
 };
 
 // unsigned char rcon[10] = {0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36};
-unsigned char rcon[30] = {0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36,0x6C,0xD8,0xAB,0x4D,0x9A,0x2F,0x5E,0xBC,0x63,0xC6,0x97,0x35,0x6A,0xD4,0xB3,0x7D,0xFA,0xEF,0xC5};
+unsigned char rcon[11] = {0x8d,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36};
 
 // The round constant word array, Rcon[i], contains the values given by
 // x to th e power (i-1) being powers of x (x is denoted as {02}) in the field GF(2^8)
@@ -157,7 +157,6 @@ void substitute_bytes(unsigned char state[4][4], int inverse)
 {
 	printf("substitute_bytes\n");
 	
-	print_state(state, TRUE);
 	int c, r;
 	for(r = 0; r < 4; r++)
 	{
@@ -173,7 +172,6 @@ void substitute_bytes(unsigned char state[4][4], int inverse)
 			}
 		}
 	}
-	print_state(state, TRUE);
 }
 
 
@@ -328,7 +326,7 @@ void add_round_key(unsigned char state[4][4], unsigned char * round_key, int rou
 	}
 }
 
-void rotate_word(unsigned char word[4])
+void rotate_word(unsigned char * word)
 {
 	unsigned char temp=word[0];
 	word[0] = word[1];
@@ -338,14 +336,12 @@ void rotate_word(unsigned char word[4])
 }
 
 
-void sub_word(unsigned char word[4])
+void sub_word(unsigned char * word)
 {
-	unsigned char temp[4];
-	temp[0] = sbox[word[0]];
-	temp[1] = sbox[word[1]];
-	temp[2] = sbox[word[2]];
-	temp[3] = sbox[word[3]];
-	word = temp;
+	word[0] = sbox[word[0]];
+	word[1] = sbox[word[1]];
+	word[2] = sbox[word[2]];
+	word[3] = sbox[word[3]];
 }
 
 void key_expansion(unsigned char key[32], unsigned char * round_key, int round_number)
@@ -360,27 +356,106 @@ void key_expansion(unsigned char key[32], unsigned char * round_key, int round_n
 		round_key[(i * 4) + 3] = key[(i * 4) + 3];
 	}
 
-	for(i=4;i<(4*round_number);i++)
+	for(i=4;i<(4*(round_number+1));++i)
 	{
-		temp[0] = round_key[((i-1) * 4) + 0];
-		temp[1] = round_key[((i-1) * 4) + 1];
-		temp[2] = round_key[((i-1) * 4) + 2];
-		temp[3] = round_key[((i-1) * 4) + 3];
+		int k = (i-1) * 4;
+		temp[0] = round_key[k + 0];
+		temp[1] = round_key[k + 1];
+		temp[2] = round_key[k + 2];
+		temp[3] = round_key[k + 3];
 
 		if(i % 4 == 0)
 		{
-			unsigned char rcon_temp = rcon[i/4];
 			rotate_word(temp);
 			sub_word(temp);
-			temp[0] = temp[0] ^ rcon_temp;
+			temp[0] = temp[0] ^ rcon[i/4];
 		}
-
-		round_key[(i * 4) + 0] = ((unsigned char)round_key[((i - 4) * 4) + 0]) ^ temp[0];
-		round_key[(i * 4) + 1] = ((unsigned char)round_key[((i - 4) * 4) + 1]) ^ temp[1];
-		round_key[(i * 4) + 2] = ((unsigned char)round_key[((i - 4) * 4) + 2]) ^ temp[2];
-		round_key[(i * 4) + 3] = ((unsigned char)round_key[((i - 4) * 4) + 3]) ^ temp[3];
+		int j = i*4;
+		k=(i-4)*4;
+		round_key[j + 0] = ((unsigned char)round_key[k + 0]) ^ temp[0];
+		round_key[j + 1] = ((unsigned char)round_key[k + 1]) ^ temp[1];
+		round_key[j + 2] = ((unsigned char)round_key[k + 2]) ^ temp[2];
+		round_key[j + 3] = ((unsigned char)round_key[k + 3]) ^ temp[3];
 	}
 }
+
+void expand_key2(unsigned char *key, unsigned char *expandedKey)
+{
+	unsigned short ii, buf1;
+  for (ii=0;ii<16;ii++)
+    expandedKey[ii] = key[ii];
+  for (ii=1;ii<11;ii++){
+    buf1 = expandedKey[ii*16 - 4];
+    expandedKey[ii*16 + 0] = sbox[expandedKey[ii*16 - 3]]^expandedKey[(ii-1)*16 + 0]^rcon[ii];
+    expandedKey[ii*16 + 1] = sbox[expandedKey[ii*16 - 2]]^expandedKey[(ii-1)*16 + 1];
+    expandedKey[ii*16 + 2] = sbox[expandedKey[ii*16 - 1]]^expandedKey[(ii-1)*16 + 2];
+    expandedKey[ii*16 + 3] = sbox[buf1                  ]^expandedKey[(ii-1)*16 + 3];
+    expandedKey[ii*16 + 4] = expandedKey[(ii-1)*16 + 4]^expandedKey[ii*16 + 0];
+    expandedKey[ii*16 + 5] = expandedKey[(ii-1)*16 + 5]^expandedKey[ii*16 + 1];
+    expandedKey[ii*16 + 6] = expandedKey[(ii-1)*16 + 6]^expandedKey[ii*16 + 2];
+    expandedKey[ii*16 + 7] = expandedKey[(ii-1)*16 + 7]^expandedKey[ii*16 + 3];
+    expandedKey[ii*16 + 8] = expandedKey[(ii-1)*16 + 8]^expandedKey[ii*16 + 4];
+    expandedKey[ii*16 + 9] = expandedKey[(ii-1)*16 + 9]^expandedKey[ii*16 + 5];
+    expandedKey[ii*16 +10] = expandedKey[(ii-1)*16 +10]^expandedKey[ii*16 + 6];
+    expandedKey[ii*16 +11] = expandedKey[(ii-1)*16 +11]^expandedKey[ii*16 + 7];
+    expandedKey[ii*16 +12] = expandedKey[(ii-1)*16 +12]^expandedKey[ii*16 + 8];
+    expandedKey[ii*16 +13] = expandedKey[(ii-1)*16 +13]^expandedKey[ii*16 + 9];
+    expandedKey[ii*16 +14] = expandedKey[(ii-1)*16 +14]^expandedKey[ii*16 +10];
+    expandedKey[ii*16 +15] = expandedKey[(ii-1)*16 +15]^expandedKey[ii*16 +11];
+  }
+}
+
+uint32_t aes_rot_dword(uint32_t val)
+{
+    uint32_t tmp = val;
+   
+    return (val >> 8) | ((tmp & 0xFF) << 24);
+}
+
+uint32_t aes_swap_dword(uint32_t val)
+{
+    return (((val & 0x000000FF) << 24) |
+            ((val & 0x0000FF00) <<  8) |
+            ((val & 0x00FF0000) >>  8) |
+            ((val & 0xFF000000) >> 24) );
+}
+
+void key_expansion3(unsigned char *key, unsigned char *round)
+{
+    unsigned char *w = (unsigned char *)round;
+    unsigned char  t;
+    int      i = 0;
+
+    printf("Key Expansion:\n");
+    do {
+        w[i] = *((unsigned char *)&key[i * 4 + 0]);
+        printf("    %2.2d:  rs: %8.8x\n", i, aes_swap_dword(w[i]));
+    } while (++i < 4);
+   
+    do {
+        printf("    %2.2d: ", i);
+        if ((i % 4) == 0) {
+            t = aes_rot_dword(w[i - 1]);
+            printf(" rot: %8.8x", aes_swap_dword(t));
+            t = aes_sub_dword(t);
+            printf(" sub: %8.8x", aes_swap_dword(t));
+            printf(" rcon: %8.8x", g_aes_rcon[i/g_aes_nk[mode] - 1]);
+            t = t ^ aes_swap_dword(g_aes_rcon[i/g_aes_nk[mode] - 1]);
+            printf(" xor: %8.8x", t);
+        } else if (g_aes_nk[mode] > 6 && (i % g_aes_nk[mode]) == 4) {
+            t = aes_sub_dword(w[i - 1]);
+            printf(" sub: %8.8x", aes_swap_dword(t));
+        } else {
+            t = w[i - 1];
+            printf(" equ: %8.8x", aes_swap_dword(t));
+        }
+        w[i] = w[i - g_aes_nk[mode]] ^ t;
+        printf(" rs: %8.8x\n", aes_swap_dword(w[i]));
+    } while (++i < g_aes_nb[mode] * (g_aes_rounds[mode] + 1));
+   
+    /* key can be discarded (or zeroed) from memory */
+}
+
 
 void print_state(unsigned char state[4][4], int as_grid)
 {
@@ -425,10 +500,13 @@ void encrypt(unsigned char cipher_key[32], unsigned char plaintext[32], unsigned
 	print_state(state, TRUE);
 	//*state = *plaintext;
 	unsigned char round_key[128];
-
+	unsigned char expanded_key[128];
 	/* begin with a key addition*/
 	key_expansion(cipher_key, round_key, 0);
-	
+	print_key(round_key);
+	expand_key2(cipher_key, expanded_key);
+	print_key(expanded_key);
+	printf("------------------------");
 	add_round_key(state, round_key, 0);
 	/* ROUNDS-1 ordinary rounds*/
 	for(round_number = 1; round_number < 10; round_number++)
