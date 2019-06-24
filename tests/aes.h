@@ -405,14 +405,26 @@ void expand_key2(unsigned char *key, unsigned char *expandedKey)
   }
 }
 
-uint32_t aes_rot_dword(uint32_t val)
+unsigned int aes_sub_dword(unsigned int val)
 {
-    uint32_t tmp = val;
+    unsigned int tmp = 0;
+   
+    tmp |= ((unsigned int)sbox[(unsigned char)((val >>  0) & 0xFF)]) <<  0;
+    tmp |= ((unsigned int)sbox[(unsigned char)((val >>  8) & 0xFF)]) <<  8;
+    tmp |= ((unsigned int)sbox[(unsigned char)((val >> 16) & 0xFF)]) << 16;
+    tmp |= ((unsigned int)sbox[(unsigned char)((val >> 24) & 0xFF)]) << 24;
+
+    return tmp;
+}
+
+unsigned int aes_rot_dword(unsigned int val)
+{
+    unsigned int tmp = val;
    
     return (val >> 8) | ((tmp & 0xFF) << 24);
 }
 
-uint32_t aes_swap_dword(uint32_t val)
+unsigned int aes_swap_dword(unsigned int val)
 {
     return (((val & 0x000000FF) << 24) |
             ((val & 0x0000FF00) <<  8) |
@@ -422,36 +434,36 @@ uint32_t aes_swap_dword(uint32_t val)
 
 void key_expansion3(unsigned char *key, unsigned char *round)
 {
-    unsigned char *w = (unsigned char *)round;
-    unsigned char  t;
+    unsigned int *w = (unsigned int *)round;
+    unsigned int  t;
     int      i = 0;
 
     printf("Key Expansion:\n");
     do {
-        w[i] = *((unsigned char *)&key[i * 4 + 0]);
-        printf("    %2.2d:  rs: %8.8x\n", i, aes_swap_dword(w[i]));
+        w[i] = *((unsigned int *)&key[i * 4 + 0]);
+ //       printf("    %2.2d:  rs: %8.8x\n", i, aes_swap_dword(w[i]));
     } while (++i < 4);
    
     do {
         printf("    %2.2d: ", i);
         if ((i % 4) == 0) {
             t = aes_rot_dword(w[i - 1]);
-            printf(" rot: %8.8x", aes_swap_dword(t));
+   //         printf(" rot: %8.8x", aes_swap_dword(t));
             t = aes_sub_dword(t);
-            printf(" sub: %8.8x", aes_swap_dword(t));
-            printf(" rcon: %8.8x", g_aes_rcon[i/g_aes_nk[mode] - 1]);
-            t = t ^ aes_swap_dword(g_aes_rcon[i/g_aes_nk[mode] - 1]);
-            printf(" xor: %8.8x", t);
-        } else if (g_aes_nk[mode] > 6 && (i % g_aes_nk[mode]) == 4) {
+   //         printf(" sub: %8.8x", aes_swap_dword(t));
+   //         printf(" rcon: %8.8x", rcon[i/4 - 1]);
+            t = t ^ aes_swap_dword(rcon[i/4 - 1]);
+   //         printf(" xor: %8.8x", t);
+        } else if (4 > 6 && (i % 4) == 4) {
             t = aes_sub_dword(w[i - 1]);
-            printf(" sub: %8.8x", aes_swap_dword(t));
+   //         printf(" sub: %8.8x", aes_swap_dword(t));
         } else {
             t = w[i - 1];
-            printf(" equ: %8.8x", aes_swap_dword(t));
+   //         printf(" equ: %8.8x", aes_swap_dword(t));
         }
-        w[i] = w[i - g_aes_nk[mode]] ^ t;
-        printf(" rs: %8.8x\n", aes_swap_dword(w[i]));
-    } while (++i < g_aes_nb[mode] * (g_aes_rounds[mode] + 1));
+        w[i] = w[i - 4] ^ t;
+   //     printf(" rs: %8.8x\n", aes_swap_dword(w[i]));
+    } while (++i < 4 * (10 + 1));
    
     /* key can be discarded (or zeroed) from memory */
 }
@@ -501,11 +513,15 @@ void encrypt(unsigned char cipher_key[32], unsigned char plaintext[32], unsigned
 	//*state = *plaintext;
 	unsigned char round_key[128];
 	unsigned char expanded_key[128];
+	unsigned char expanded_key3[128];
 	/* begin with a key addition*/
+	printf("-------------------------");
 	key_expansion(cipher_key, round_key, 0);
 	print_key(round_key);
 	expand_key2(cipher_key, expanded_key);
 	print_key(expanded_key);
+	key_expansion3(cipher_key, expanded_key3);
+	print_key(expanded_key3);
 	printf("------------------------");
 	add_round_key(state, round_key, 0);
 	/* ROUNDS-1 ordinary rounds*/
