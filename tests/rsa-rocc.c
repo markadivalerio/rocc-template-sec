@@ -54,15 +54,14 @@ int main() {
         {0ULL, 0xcbfe03ULL} //mod
     };*/
     rsaData rsa = {
-	{0ULL, 61ULL}, //prime1
-        {0ULL, 53ULL}, //prime2
-        65537UL, //pubExp
-        {0x00cab10ccaa4437b67ULL,  0x11c977a277fe00a1ULL}, //privateExp
+	{0ULL, 61ULL}, 	//prime1
+        {0ULL, 53ULL}, 	//prime2
+        17UL, 		//pubExp
+        {0x0ULL, 2753ULL}, //privateExp
         {0ULL, 3233ULL} //mod
     };
     uint64_t encrypted[7];
-    uint64_t decrypted2[7];
-    encrypt(rsa, encrypted);
+    encrypt(rsa, plaintext, encrypted);
 
     printf("\nEncrypted: ");
     int i=0;
@@ -81,6 +80,7 @@ int main() {
     //END DO NOT MODIFY
 
     /* YOUR CODE HERE: Invoke your RSA acclerator, write the decrypted output of ciphertext to decrypted */
+    unsigned char decrypted2[7];
     decrypt(rsa, encrypted, decrypted2);
     printf("\nDecrypted2: ");
  	
@@ -95,7 +95,9 @@ int main() {
     duration = rdcycle() - initCycle;
     printf("RSA Decryption took %llu cycles!\n", duration);
 
-    char *decrypted_text = (char*)&decrypted;
-    printf("decrypted=%s\n", decrypted_text);
-    assert(strcmp(plaintext, decrypted_text) == 0);
+    //char *decrypted_text = (char*)&decrypted;
+    printf("decrypted=%s\n", decrypted2);
+    assert(strcmp(plaintext, decrypted2) == 0);
+    //printf("decrypted=%s\n", decrypted_text);
+    //assert(strcmp(plaintext, decrypted_text) == 0);
 }
