@@ -56,8 +56,8 @@ int main() {
     rsaData rsa = {
 	{0ULL, 61ULL}, //prime1
         {0ULL, 53ULL}, //prime2
-        65537UL, //pubExp
-        {0x00cab10ccaa4437b67ULL,  0x11c977a277fe00a1ULL}, //privateExp
+        17UL, //pubExp
+        {0ULL, 2753ULL}, //privateExp
         {0ULL, 3233ULL} //mod
     };
     uint64_t encrypted[7];
@@ -68,7 +68,7 @@ int main() {
     int i=0;
     for(i=0;i < 7; i++)
     {
-        printf("%lu ", encrypted[i]);
+        printf("%llu ", encrypted[i]);
     }
     printf("\n");
 
@@ -95,7 +95,7 @@ int main() {
     duration = rdcycle() - initCycle;
     printf("RSA Decryption took %llu cycles!\n", duration);
 
-    char *decrypted_text = (char*)&decrypted;
+    char *decrypted_text = (char*)&decrypted2;
     printf("decrypted=%s\n", decrypted_text);
     assert(strcmp(plaintext, decrypted_text) == 0);
 }
