@@ -72,7 +72,7 @@
 
 void print_state(unsigned char state[4][4], int is_grid);
 void encrypt(unsigned char cipher_key[32], unsigned char plaintext[32], unsigned char iv[32], unsigned char * enc_buf);
-
+void decrypt(unsigned char cipher_key[32], unsigned char *ciphertext, unsigned char * deciphered_text);
 
 //Implement AES here
 
@@ -441,31 +441,21 @@ void key_expansion3(unsigned char *key, unsigned char *round)
     printf("Key Expansion:\n");
     do {
         w[i] = *((unsigned int *)&key[i * 4 + 0]);
- //       printf("    %2.2d:  rs: %8.8x\n", i, aes_swap_dword(w[i]));
     } while (++i < 4);
    
     do {
         printf("    %2.2d: ", i);
         if ((i % 4) == 0) {
             t = aes_rot_dword(w[i - 1]);
-   //         printf(" rot: %8.8x", aes_swap_dword(t));
             t = aes_sub_dword(t);
-   //         printf(" sub: %8.8x", aes_swap_dword(t));
-   //         printf(" rcon: %8.8x", rcon[i/4 - 1]);
             t = t ^ aes_swap_dword(rcon[i/4 - 1]);
-   //         printf(" xor: %8.8x", t);
         } else if (4 > 6 && (i % 4) == 4) {
             t = aes_sub_dword(w[i - 1]);
-   //         printf(" sub: %8.8x", aes_swap_dword(t));
         } else {
             t = w[i - 1];
-   //         printf(" equ: %8.8x", aes_swap_dword(t));
         }
         w[i] = w[i - 4] ^ t;
-   //     printf(" rs: %8.8x\n", aes_swap_dword(w[i]));
     } while (++i < 4 * (10 + 1));
-   
-    /* key can be discarded (or zeroed) from memory */
 }
 
 
@@ -518,14 +508,18 @@ void encrypt(unsigned char cipher_key[32], unsigned char plaintext[32], unsigned
 	printf("-------------------------");
 	key_expansion(cipher_key, round_key, 0);
 	print_key(round_key);
-	expand_key2(cipher_key, expanded_key);
-	print_key(expanded_key);
-	key_expansion3(cipher_key, expanded_key3);
-	print_key(expanded_key3);
+//	expand_key2(cipher_key, round_key);
+//	print_key(expanded_key);
+	//key_expansion3(cipher_key, round_key);
+	//print_key(round_key);
+	/*for(i=0;i<128;i++)
+        {
+		expanded_key_results[i] = round_key[i];
+	}*/
 	printf("------------------------");
 	add_round_key(state, round_key, 0);
 	/* ROUNDS-1 ordinary rounds*/
-	for(round_number = 1; round_number < 10; round_number++)
+	for(round_number = 0; round_number < 9; round_number++)
 	{
 		printf("\nRound %d - ", round_number);
 		print_key(round_key);
@@ -552,10 +546,11 @@ void encrypt(unsigned char cipher_key[32], unsigned char plaintext[32], unsigned
 	}
 }
 
-void decrypt(unsigned char *cipher_key, unsigned char *ciphertext, unsigned char * enc_buf)
+void decrypt(unsigned char cipher_key[32], unsigned char * ciphertext, unsigned char * decyphered_text)
 {
+	int i,j;
 	int round;
-	int inverse = FALSE;
+	int inverse = TRUE;
 	/* To decrypt:
 	 *   apply the inverse operations of the encrypt routine,
 	 *   in opposite order
@@ -570,25 +565,36 @@ void decrypt(unsigned char *cipher_key, unsigned char *ciphertext, unsigned char
 	 *   without InvMixColumns
 	 *   with extra AddRoundKey
 	*/
-	unsigned char state[4][4];
+//	unsigned char state[4][4];
+//	int iterations = sizeof(ciphertext)/4;
+/*	for(int i = 0; i < 4; ++i)
+	{
+    		state[i][0] = ciphertext[i*4];
+		state[i][1] = ciphertext[i*4+1];
+		state[i][2] = ciphertext[i*4+2];
+		state[i][3] = ciphertext[i*4+3];
+	}*/
+	//unsigned char round_key[128];
+	//key_expansion3(cipher_key, round_key);
 
-	unsigned char *round_key = {0};
         /* begin with a key addition*/
-        key_expansion(cipher_key, round_key, 10);
-	
-	add_round_key(state, round_key, 10);
-	shift_rows(state, inverse);
+//        key_expansion(cipher_key, expanded_key, 9);
+//	print_key(cipher_key);	
+//	add_round_key(state, expanded_key, 10);
+//	shift_rows(state, inverse);
 	/* ROUNDS-1 ordinary rounds*/
-	for(round = 9;round > 0; round--)
+/*	for(round = 9;round > 0; round--)
 	{
 		add_round_key(state, round_key, round);
 		mix_columns(state, inverse);
 		substitute_bytes(state, inverse);
 		shift_rows(state, inverse);
+                print_state(state, TRUE);
 	}
-
+*/
 	/* End with the extra key addition*/
-	add_round_key(state, round_key, 0);
+//	add_round_key(state, round_key, 0);
+//	print_state(state, TRUE);
 }
 
 
