@@ -60,15 +60,15 @@ int main() {
         {0ULL, 2753ULL}, //privateExp
         {0ULL, 3233ULL} //mod
     };
-    uint64_t encrypted[7];
-    uint64_t decrypted2[7];
+    uint128 encrypted[7];
+    char decrypted2[7];
     encrypt(rsa, encrypted);
 
     printf("\nEncrypted: ");
     int i=0;
     for(i=0;i < 7; i++)
     {
-        printf("%llu ", encrypted[i]);
+        printf("%llu %llu", encrypted[i]);
     }
     printf("\n");
 
@@ -96,6 +96,6 @@ int main() {
     printf("RSA Decryption took %llu cycles!\n", duration);
 
     char *decrypted_text = (char*)&decrypted2;
-    printf("decrypted=%s\n", decrypted_text);
-    assert(strcmp(plaintext, decrypted_text) == 0);
+    printf("decrypted=%s\n", decrypted2);
+    assert(strcmp(plaintext, decrypted2) == 0);
 }
