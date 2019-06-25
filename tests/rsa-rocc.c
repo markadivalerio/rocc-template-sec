@@ -62,15 +62,6 @@ int main() {
     };
     uint64_t encrypted[7];
     encrypt(rsa, plaintext, encrypted);
-
-    printf("\nEncrypted: ");
-    int i=0;
-    for(i=0;i < 7; i++)
-    {
-        printf("%lu ", encrypted[i]);
-    }
-    printf("\n");
-
     asm volatile ("fence");
 
     //DO NOT MODIFY
@@ -82,13 +73,6 @@ int main() {
     /* YOUR CODE HERE: Invoke your RSA acclerator, write the decrypted output of ciphertext to decrypted */
     unsigned char decrypted2[7];
     decrypt(rsa, encrypted, decrypted2);
-    printf("\nDecrypted2: ");
- 	
-    for(i=0;i < 7; i++)
-    {
-        printf("%c ", (char)decrypted2[i]);
-    }
-    printf("\n");
     asm volatile ("fence");
 
     //DO NOT MODIFY
