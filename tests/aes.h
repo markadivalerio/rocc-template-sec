@@ -68,13 +68,24 @@
 
 #define TRUE 1
 #define FALSE 0
+
 #define xtime(x)   ((x<<1) ^ (((x>>7) & 1) * 0x1b))
 
-void print_state(unsigned char state[4][4], int is_grid);
-void encrypt(unsigned char cipher_key[32], unsigned char plaintext[32], unsigned char iv[32], unsigned char * enc_buf);
+typedef struct aes_mode {
+  int num_cols;
+  int num_rnds;
+  int key_len;
+  int key_expanded_size;
+  int inverse;
+} aes_mode;
+
+
+void print_state(unsigned char state[4][6]);
+void encrypt(unsigned char cipher_key[32], unsigned char *plaintext, unsigned char iv[32], unsigned char * enc_buf);
 void decrypt(unsigned char cipher_key[32], unsigned char *ciphertext, unsigned char * deciphered_text);
 
-//Implement AES here
+
+aes_mode aes;//global aes
 
 unsigned char sbox[256] =   {
 //0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
@@ -129,6 +140,9 @@ unsigned char rmc_box[4][4] = {
 
 // unsigned char rcon[10] = {0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36};
 unsigned char rcon[11] = {0x8d,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36};
+
+
+
 
 // The round constant word array, Rcon[i], contains the values given by
 // x to th e power (i-1) being powers of x (x is denoted as {02}) in the field GF(2^8)
@@ -459,18 +473,17 @@ void key_expansion3(unsigned char *key, unsigned char *round)
 }
 
 
-void print_state(unsigned char state[4][4], int as_grid)
+void print_state(unsigned char state[4][6])
 {
     int i,j;
     printf("State:\n");
     for(i=0;i<4;i++)
     {
-      for(j=0;j<4;j++)
+      for(j=0;j<6;j++)
       { 
         printf("%x ", state[i][j] & 0xFF);
       }
-      if(as_grid)
-        printf("\n");
+      printf("\n");
     }
     printf("\n");
 }
@@ -479,34 +492,53 @@ void print_key(unsigned char *key)
 {
     printf("Key: ");
     int i=0;
-    while(key[i] != '\0')
+    for(i=0;i<sizeof(key);i++)
     {
       printf("%x ", key[i] & 0xFF);
-      i = i + 1;
     }
     printf("\n");
 }
 
-void encrypt(unsigned char cipher_key[32], unsigned char plaintext[32], unsigned char iv[32], unsigned char * enc_buf)
+void set_mode(int mode, int inverse)
+{
+/*
+aes_mode {
+    int num_cols;
+    int num_rnds;
+    int key_len;
+    int key_expanded_size;
+    int inverse
+} */
+
+    if(mode == 256)
+    	aes = (aes_mode){6, 14, 32, 240, inverse};
+    if(mode == 192)
+	aes = (aes_mode){5, 12, 24, 208, inverse};
+    else //mode == 128
+	aes = (aes_mode){4, 10, 16, 176, inverse};
+}
+
+void encrypt(unsigned char cipher_key[32], unsigned char *plaintext, unsigned char iv[32], unsigned char * enc_buf)
 {
 	int i,j;
 	int round_number;
-	int inverse = FALSE;
-	unsigned char state[4][4];
-	for(i=0;i<32;i++)
+        int inverse = FALSE;
+        set_mode(256, FALSE);
+	unsigned char state[4][aes.num_cols];
+        int num_iter = sizeof(plaintext) / 4;
+	for(i=0;i<24;i++)
 	{
-		printf("%x ", plaintext[i]);
-		int r = (int)i/4;
-		state[r][i%4] = plaintext[i] ^ iv[i];
+		int r = (int)i/aes.num_cols;
+		state[r][i%aes.num_cols] = iv[i];
 	}
-	print_state(state, TRUE);
+	print_state(state);
 	//*state = *plaintext;
 	unsigned char round_key[128];
 	unsigned char expanded_key[128];
 	unsigned char expanded_key3[128];
 	/* begin with a key addition*/
 	printf("-------------------------");
-	key_expansion(cipher_key, round_key, 0);
+	expand_key2(cipher_key, round_key);
 	print_key(round_key);
 //	expand_key2(cipher_key, round_key);
 //	print_key(expanded_key);
@@ -523,23 +555,23 @@ void encrypt(unsigned char cipher_key[32], unsigned char plaintext[32], unsigned
 	{
 		printf("\nRound %d - ", round_number);
 		print_key(round_key);
-		print_state(state, TRUE);
+		print_state(state);
 		substitute_bytes(state, inverse);
-		print_state(state, TRUE);
+		print_state(state);
 		shift_rows(state, inverse);
-		print_state(state, TRUE);
+		print_state(state);
 		mix_columns(state, inverse);
-		print_state(state, TRUE);
+		print_state(state);
 		add_round_key(state, round_key, round_number);
 	}
 	/* Last round is special: there is no mix_columns*/
 	substitute_bytes(state, inverse);
 	shift_rows(state, inverse);
 	add_round_key(state, round_key, round_number);
-	print_state(state, TRUE);
+	print_state(state);
 	for(i=0;i<4;i++)
 	{
-	  for(j=0;j<4;j++)
+	  for(j=0;j<aes.num_cols;j++)
 	  {
 	    enc_buf[i*4+j] = state[i][j];
 	  }
