@@ -68,26 +68,35 @@
 
 #define TRUE 1
 #define FALSE 0
-
+#define BLOCK_LEN 16
 #define xtime(x)   ((x<<1) ^ (((x>>7) & 1) * 0x1b))
 
+typedef unsigned char uchar;
+typedef uchar block[4][4];
+
 typedef struct aes_mode {
+  int mode;
   int num_cols;
   int num_rnds;
   int key_len;
-  int key_expanded_size;
+  int key_exp_len;
+  int num_key_words;
   int inverse;
 } aes_mode;
 
-
-void print_state(unsigned char state[4][6]);
-void encrypt(unsigned char cipher_key[32], unsigned char *plaintext, unsigned char iv[32], unsigned char * enc_buf);
-void decrypt(unsigned char cipher_key[32], unsigned char *ciphertext, unsigned char * deciphered_text);
-
-
 aes_mode aes;//global aes
 
-unsigned char sbox[256] =   {
+
+
+
+void print_state(block *state);
+void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * output, int len);
+//void decrypt(unsigned char cipher_key[32], unsigned char *ciphertext, unsigned char * deciphered_text);
+
+
+
+
+static const uchar sbox[256] =   {
 //0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
 0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76, //0
 0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0, //1
@@ -106,7 +115,7 @@ unsigned char sbox[256] =   {
 0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf, //E
 0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16 }; //F
  
-unsigned char rsbox[256] = {
+static const uchar rsbox[256] = {
 0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb, //0
 0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb, //1
 0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d, 0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e, //2
@@ -124,22 +133,21 @@ unsigned char rsbox[256] = {
 0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61, //E
 0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d }; //F
 
-unsigned char mc_box[4][4] = {
+static const uchar mcbox[4][4] = {
 	{0x02, 0x03, 0x01, 0x01},
 	{0x01, 0x02, 0x03, 0x01},
 	{0x01, 0x01, 0x02, 0x03},
 	{0x03, 0x01, 0x01, 0x02}
 };
 
-unsigned char rmc_box[4][4] = {
+static const uchar rmcbox[4][4] = {
 	{0x0E, 0x0B, 0x0D, 0x09},
 	{0x09, 0x0E, 0x0B, 0x0D},
 	{0x0D, 0x09, 0x0E, 0x0B},
 	{0x0B, 0x0D, 0x09, 0x0E}
 };
 
-// unsigned char rcon[10] = {0x00,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36};
-unsigned char rcon[11] = {0x8d,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36};
+uchar rcon[11] = {0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
 
 
 
@@ -167,328 +175,339 @@ unsigned char rcon[11] = {0x8d,0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80,0x1B,0x36
 // 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb  };
 
 
-void substitute_bytes(unsigned char state[4][4], int inverse)
+void substitute_bytes(block * state)
 {
-	printf("substitute_bytes\n");
+	printf("substitute_bytes ");
 	
 	int c, r;
 	for(r = 0; r < 4; r++)
 	{
 		for(c = 0; c < 4; c++)
 		{
-			if(inverse)
-			{
-				state[r][c] = rsbox[state[r][c]];
-			}
+			if(aes.inverse)
+				(*state)[r][c] = rsbox[(*state)[r][c]];
 			else
-			{
-				state[r][c] = sbox[state[r][c]];
-			}
+				(*state)[r][c] = sbox[(*state)[r][c]];
 		}
 	}
 }
 
 
-void shift_row(unsigned char * row, signed int delta, int inverse)
-//shifts single row left (inverse=false) or right (inverse=true)
-{	
-	unsigned char temp[4];
-	if(delta == 0)
-		return;;
+// void shift_row(uchar * row, signed int delta)
+// //shifts single row left (inverse=false) or right (inverse=true)
+// {	
+// 	uchar temp[4];
+//   int right = TRUE;
+// 	if(delta == 0)
+// 		return;
+
+//   if(delta < 0)
+//   {
+//     delta *= -1;
+//     right = FALSE;
+//   }
 	
-	for(;delta>0;delta--)
-	{
-	    if(inverse) // right
-	    {
-		unsigned char temp = row[3];
-		row[3] = row[2];
-		row[2] = row[1];
-		row[1] = row[0];
-		row[0] = temp;
-	    }
-	    else // left
-	    {
-		unsigned char temp = row[0];
-                row[0] = row[1];
-                row[1] = row[2];
-                row[2] = row[3];
-                row[3] = temp;
-	    }
-	}
-}
+// 	for(;delta>0;delta--)
+// 	{
+// 	  if(right)
+// 	  {
+//   		const uchar temp = row[3];
+//   		row[3] = row[2];
+//   		row[2] = row[1];
+//   		row[1] = row[0];
+//   		row[0] = temp;
+// 	  }
+// 	  else // left
+// 	  {
+// 		    const uchar temp = row[0];
+//         row[0] = row[1];
+//         row[1] = row[2];
+//         row[2] = row[3];
+//         row[3] = temp;
+// 	  }
+// 	}
+// }
 
-void shift_rows(unsigned char state[4][4], int inverse)
+// void shift_rows(block * state)
+// {
+// 	printf("shift_rows ");
+//   signed int r;
+//   for(r = 1; r < 4; r++) // row 0 does not shift.
+//   {
+//       shift_row(state[r], r);
+//   }
+// }
+
+void shift_rows(block* state)
 {
-	printf("shift_rows");
-        signed int r;
-        for(r = 1; r < 4; r++) // row 0 does not shift.
-        {
-                shift_row(state[r], r, inverse);
-        }
-}
-unsigned char multiply(unsigned char a, unsigned char b) {
-   int i;
+  printf("shift_rows ");
+  uchar temp;
 
-   unsigned char c = 0;
-   unsigned char d = b;
+  // Rotate first row 1 columns to left  
+  temp           = (*state)[0][1];
+  (*state)[0][1] = (*state)[1][1];
+  (*state)[1][1] = (*state)[2][1];
+  (*state)[2][1] = (*state)[3][1];
+  (*state)[3][1] = temp;
 
-   for (int i=0 ; i < 8 ; i++) {
-      if (a%2 == 1) c ^= d;
-      a /= 2;
-      d = xtime(d);
-   }
-   return c;
+  // Rotate second row 2 columns to left  
+  temp           = (*state)[0][2];
+  (*state)[0][2] = (*state)[2][2];
+  (*state)[2][2] = temp;
+
+  temp           = (*state)[1][2];
+  (*state)[1][2] = (*state)[3][2];
+  (*state)[3][2] = temp;
+
+  // Rotate third row 3 columns to left
+  temp           = (*state)[0][3];
+  (*state)[0][3] = (*state)[3][3];
+  (*state)[3][3] = (*state)[2][3];
+  (*state)[2][3] = (*state)[1][3];
+  (*state)[1][3] = temp;
 }
+
+
+// unsigned char multiply(unsigned char a, unsigned char b) {
+//    int i;
+
+//    unsigned char c = 0;
+//    unsigned char d = b;
+
+//    for (int i=0 ; i < 8 ; i++) {
+//       if (a%2 == 1) c ^= d;
+//       a /= 2;
+//       d = xtime(d);
+//    }
+//    return c;
+// }
+uchar multiply(uchar x, uchar y)
+{
+  return (((y & 1) * x) ^
+       ((y>>1 & 1) * xtime(x)) ^
+       ((y>>2 & 1) * xtime(xtime(x))) ^
+       ((y>>3 & 1) * xtime(xtime(xtime(x)))) ^
+       ((y>>4 & 1) * xtime(xtime(xtime(xtime(x)))))); /* this last call to xtime() can be omitted */
+  }
 
 // MixColumns function mixes the columns of the state matrix
-void mix_columns2(unsigned char a, unsigned char b, unsigned char c, unsigned char d, unsigned char *temp) {
-   int i;
-   unsigned char Tmp,Tm,t,e,f,g,h;
-   t = a;
-   Tmp = a ^ b ^ c ^ d;
-   Tm = a ^ b ; 
-   Tm = xtime(Tm); 
-   e = Tm ^ Tmp ^ a ;
+void mix_columns(block* state)
+{
+  uint8_t i;
+  uint8_t Tmp, Tm, t;
+  for (i = 0; i < 4; ++i)
+  {  
+    t   = (*state)[i][0];
+    Tmp = (*state)[i][0] ^ (*state)[i][1] ^ (*state)[i][2] ^ (*state)[i][3] ;
+    Tm  = (*state)[i][0] ^ (*state)[i][1] ; Tm = xtime(Tm);  (*state)[i][0] ^= Tm ^ Tmp ;
+    Tm  = (*state)[i][1] ^ (*state)[i][2] ; Tm = xtime(Tm);  (*state)[i][1] ^= Tm ^ Tmp ;
+    Tm  = (*state)[i][2] ^ (*state)[i][3] ; Tm = xtime(Tm);  (*state)[i][2] ^= Tm ^ Tmp ;
+    Tm  = (*state)[i][3] ^ t ;              Tm = xtime(Tm);  (*state)[i][3] ^= Tm ^ Tmp ;
+  }
+}
+// // MixColumns function mixes the columns of the state matrix
+// void mix_columns2(unsigned char a, unsigned char b, unsigned char c, unsigned char d, unsigned char *temp) {
+//    int i;
+//    unsigned char Tmp,Tm,t,e,f,g,h;
+//    t = a;
+//    Tmp = a ^ b ^ c ^ d;
+//    Tm = a ^ b ; 
+//    Tm = xtime(Tm); 
+//    e = Tm ^ Tmp ^ a ;
       
-   Tm = b ^ c; 
-   Tm = xtime(Tm); 
-   f = Tm ^ Tmp ^ b;
+//    Tm = b ^ c; 
+//    Tm = xtime(Tm); 
+//    f = Tm ^ Tmp ^ b;
 
-   Tm = c ^ d ; 
-   Tm = xtime(Tm); 
-   g = Tm ^ Tmp ^ c;
+//    Tm = c ^ d ; 
+//    Tm = xtime(Tm); 
+//    g = Tm ^ Tmp ^ c;
 
-   Tm = d ^ t ; 
-   Tm = xtime(Tm); 
-   h = Tm ^ Tmp ^ d;
-   temp[0] = e;
-   temp[1] = f;
-   temp[2] = g;
-   temp[3] = h;
-   printf("output: a=0x%02x b=0x%02x c=0x%02x d=0x%02x\n",e,f,g,h);
-   //return temp;
-}
+//    Tm = d ^ t ; 
+//    Tm = xtime(Tm); 
+//    h = Tm ^ Tmp ^ d;
+//    temp[0] = e;
+//    temp[1] = f;
+//    temp[2] = g;
+//    temp[3] = h;
+//    printf("output: a=0x%02x b=0x%02x c=0x%02x d=0x%02x\n",e,f,g,h);
+//    //return temp;
+// }
 
 
-unsigned char mul_column(unsigned char col[4], int row, unsigned char mbox[4][4])
-{
-	unsigned char * temp[4];
+// unsigned char mul_column(unsigned char col[4], int row, unsigned char mbox[4][4])
+// {
+// 	unsigned char * temp[4];
 	
-	unsigned char res = (
-		(col[0] * mbox[row][0])
-		+ (col[1] * mbox[row][1])
-		+ (col[2] * mbox[row][2])
-		+ (col[3] * mbox[row][3]));
-	if((res & 0x80) == 0)
-	{
-		res = res << 1;
-		res = res ^ 0x00;
-	}
-	else
-	{
-		res = res << 1;
-		res = res ^ 0x1b;
-	}
-	return res;
-}
+// 	unsigned char res = (
+// 		(col[0] * mbox[row][0])
+// 		+ (col[1] * mbox[row][1])
+// 		+ (col[2] * mbox[row][2])
+// 		+ (col[3] * mbox[row][3]));
+// 	if((res & 0x80) == 0)
+// 	{
+// 		res = res << 1;
+// 		res = res ^ 0x00;
+// 	}
+// 	else
+// 	{
+// 		res = res << 1;
+// 		res = res ^ 0x1b;
+// 	}
+// 	return res;
+// }
 
-void mix_columns(unsigned char state[4][4], int inverse)
-{
-	unsigned char mbox[4][4];
-	if(inverse)
-		memcpy(mbox, rmc_box, sizeof(mbox));
-	else
-		memcpy(mbox, mc_box, sizeof(mbox)); 
-	printf("mix_columns");
-	unsigned char temp[4][4] = {{0}};
-	int r, c;
-	for(c=0;c<4;c++)
-	{
-	    unsigned char temp[4];
-	    mix_columns2(state[0][c], state[1][c], state[2][c], state[3][c], temp);
-	    state[0][c] = temp[0];
-	    state[1][c] = temp[1];
-	    state[2][c] = temp[2];
-	    state[3][c] = temp[3];
-	}
-	/*printf("before ");
-	print_state(state, TRUE);
-	for(c = 0; c < 4; c++)
-	{
-		unsigned char col[4] = {state[0][c], state[1][c], state[2][c], state[3][c]};
-		for(r = 0; r < 4; r++)
-		{
-			temp[r][c] = mul_column(col, r, mbox);
-		}
-	}
-	memcpy(state, temp, sizeof(temp));
+// void mix_columns(unsigned char state[4][4], int inverse)
+// {
+// 	unsigned char mbox[4][4];
+// 	if(inverse)
+// 		memcpy(mbox, rmc_box, sizeof(mbox));
+// 	else
+// 		memcpy(mbox, mc_box, sizeof(mbox)); 
+// 	printf("mix_columns");
+// 	unsigned char temp[4][4] = {{0}};
+// 	int r, c;
+// 	for(c=0;c<4;c++)
+// 	{
+// 	    unsigned char temp[4];
+// 	    mix_columns2(state[0][c], state[1][c], state[2][c], state[3][c], temp);
+// 	    state[0][c] = temp[0];
+// 	    state[1][c] = temp[1];
+// 	    state[2][c] = temp[2];
+// 	    state[3][c] = temp[3];
+// 	}
+// 	/*printf("before ");
+// 	print_state(state, TRUE);
+// 	for(c = 0; c < 4; c++)
+// 	{
+// 		unsigned char col[4] = {state[0][c], state[1][c], state[2][c], state[3][c]};
+// 		for(r = 0; r < 4; r++)
+// 		{
+// 			temp[r][c] = mul_column(col, r, mbox);
+// 		}
+// 	}
+// 	memcpy(state, temp, sizeof(temp));
 	
-	printf("after ");
-	print_state(state, TRUE);*/
+// 	printf("after ");
+// 	print_state(state, TRUE);*/
+// }
+
+// void rotate_word(uchar * word)
+// {
+//   const uchar temp = word[0];
+//   word[0] = word[1];
+//   word[1] = word[2];
+//   word[2] = word[3];
+//   word[3] = temp;
+// }
+
+// void sub_word(uchar * word)
+// {
+//   word[0] = sbox[word[0]];
+//   word[1] = sbox[word[1]];
+//   word[2] = sbox[word[2]];
+//   word[3] = sbox[word[3]];
+// }
+
+void set_word(uchar * left, int lidx, uchar * right, int ridx)
+{
+  left[lidx + 0] = right[ridx + 0];
+  left[lidx + 1] = right[ridx + 1];
+  left[lidx + 2] = right[ridx + 2];
+  left[lidx + 3] = right[ridx + 3];
 }
 
-void add_round_key(unsigned char state[4][4], unsigned char * round_key, int round)
+void expand_key(uchar * round_key, uchar * key)
 {
-	/* XOR corresponding text input and round key input bytes*/
-	int i, j;
-	for(i = 0;i<4;i++)
-	{
-		for(j = 0; j < 4; j++)
-		{
-			state[i][j] ^= round_key[(round * 4 * 4) + (i * 4) + j];
-		}
-	}
-}
+  int i, j, k;
+  uchar temp[4]; // Used for the column/row operations
+  
+  // The first round key is the key itself.
+  for (i = 0; i < aes.num_key_words; ++i)
+  {
+    // set_word(round_key, (i*4), key, (i*4));
+    round_key[(i * 4) + 0] = key[(i * 4) + 0];
+    round_key[(i * 4) + 1] = key[(i * 4) + 1];
+    round_key[(i * 4) + 2] = key[(i * 4) + 2];
+    round_key[(i * 4) + 3] = key[(i * 4) + 3];
+  }
 
-void rotate_word(unsigned char * word)
-{
-	unsigned char temp=word[0];
-	word[0] = word[1];
-	word[1] = word[2];
-	word[2] = word[3];
-	word[3] = temp;
-}
+  // All other round keys are found from the previous round keys.
+  for (i = aes.num_key_words; i < 4 * (aes.num_rnds + 1); ++i)
+  {
+    k = (i - 1) * 4;
+    // set_word(temp, 0, round_key, k);
+    temp[0]=round_key[k + 0];
+    temp[1]=round_key[k + 1];
+    temp[2]=round_key[k + 2];
+    temp[3]=round_key[k + 3];
 
+    if (i % aes.num_key_words == 0)
+    {
+      const uchar u8tmp = temp[0];
+      temp[0] = temp[1];
+      temp[1] = temp[2];
+      temp[2] = temp[3];
+      temp[3] = u8tmp;
 
-void sub_word(unsigned char * word)
-{
-	word[0] = sbox[word[0]];
-	word[1] = sbox[word[1]];
-	word[2] = sbox[word[2]];
-	word[3] = sbox[word[3]];
-}
+      // sub_word(temp);
+      temp[0] = sbox[temp[0]];
+      temp[1] = sbox[temp[1]];
+      temp[2] = sbox[temp[2]];
+      temp[3] = sbox[temp[3]];
 
-void key_expansion(unsigned char key[32], unsigned char * round_key, int round_number)
-{
-	int i,j;
-	unsigned char temp[4];
-	for(i=0;i<4;i++)
-	{
-		round_key[(i * 4) + 0] = key[(i * 4) + 0];
-		round_key[(i * 4) + 1] = key[(i * 4) + 1];
-		round_key[(i * 4) + 2] = key[(i * 4) + 2];
-		round_key[(i * 4) + 3] = key[(i * 4) + 3];
-	}
+      temp[0] ^= rcon[i/aes.num_key_words];
+    }
 
-	for(i=4;i<(4*(round_number+1));++i)
-	{
-		int k = (i-1) * 4;
-		temp[0] = round_key[k + 0];
-		temp[1] = round_key[k + 1];
-		temp[2] = round_key[k + 2];
-		temp[3] = round_key[k + 3];
-
-		if(i % 4 == 0)
-		{
-			rotate_word(temp);
-			sub_word(temp);
-			temp[0] = temp[0] ^ rcon[i/4];
-		}
-		int j = i*4;
-		k=(i-4)*4;
-		round_key[j + 0] = ((unsigned char)round_key[k + 0]) ^ temp[0];
-		round_key[j + 1] = ((unsigned char)round_key[k + 1]) ^ temp[1];
-		round_key[j + 2] = ((unsigned char)round_key[k + 2]) ^ temp[2];
-		round_key[j + 3] = ((unsigned char)round_key[k + 3]) ^ temp[3];
-	}
-}
-
-void expand_key2(unsigned char *key, unsigned char *expandedKey)
-{
-	unsigned short ii, buf1;
-  for (ii=0;ii<16;ii++)
-    expandedKey[ii] = key[ii];
-  for (ii=1;ii<11;ii++){
-    buf1 = expandedKey[ii*16 - 4];
-    expandedKey[ii*16 + 0] = sbox[expandedKey[ii*16 - 3]]^expandedKey[(ii-1)*16 + 0]^rcon[ii];
-    expandedKey[ii*16 + 1] = sbox[expandedKey[ii*16 - 2]]^expandedKey[(ii-1)*16 + 1];
-    expandedKey[ii*16 + 2] = sbox[expandedKey[ii*16 - 1]]^expandedKey[(ii-1)*16 + 2];
-    expandedKey[ii*16 + 3] = sbox[buf1                  ]^expandedKey[(ii-1)*16 + 3];
-    expandedKey[ii*16 + 4] = expandedKey[(ii-1)*16 + 4]^expandedKey[ii*16 + 0];
-    expandedKey[ii*16 + 5] = expandedKey[(ii-1)*16 + 5]^expandedKey[ii*16 + 1];
-    expandedKey[ii*16 + 6] = expandedKey[(ii-1)*16 + 6]^expandedKey[ii*16 + 2];
-    expandedKey[ii*16 + 7] = expandedKey[(ii-1)*16 + 7]^expandedKey[ii*16 + 3];
-    expandedKey[ii*16 + 8] = expandedKey[(ii-1)*16 + 8]^expandedKey[ii*16 + 4];
-    expandedKey[ii*16 + 9] = expandedKey[(ii-1)*16 + 9]^expandedKey[ii*16 + 5];
-    expandedKey[ii*16 +10] = expandedKey[(ii-1)*16 +10]^expandedKey[ii*16 + 6];
-    expandedKey[ii*16 +11] = expandedKey[(ii-1)*16 +11]^expandedKey[ii*16 + 7];
-    expandedKey[ii*16 +12] = expandedKey[(ii-1)*16 +12]^expandedKey[ii*16 + 8];
-    expandedKey[ii*16 +13] = expandedKey[(ii-1)*16 +13]^expandedKey[ii*16 + 9];
-    expandedKey[ii*16 +14] = expandedKey[(ii-1)*16 +14]^expandedKey[ii*16 +10];
-    expandedKey[ii*16 +15] = expandedKey[(ii-1)*16 +15]^expandedKey[ii*16 +11];
+    // if(aes.mode == 256 && i % aes.num_key_words == 4)
+    if(i % 8 == 4)
+    {
+      temp[0] = sbox[temp[0]];
+      temp[1] = sbox[temp[1]];
+      temp[2] = sbox[temp[2]];
+      temp[3] = sbox[temp[3]];
+    }
+    j = i * 4;
+    k = (i - aes.num_key_words) * 4;
+    round_key[j + 0] = round_key[k + 0] ^ temp[0];
+    round_key[j + 1] = round_key[k + 1] ^ temp[1];
+    round_key[j + 2] = round_key[k + 2] ^ temp[2];
+    round_key[j + 3] = round_key[k + 3] ^ temp[3];
   }
 }
 
-unsigned int aes_sub_dword(unsigned int val)
+void add_round_key(block *state, uchar *round_key, int round)
 {
-    unsigned int tmp = 0;
-   
-    tmp |= ((unsigned int)sbox[(unsigned char)((val >>  0) & 0xFF)]) <<  0;
-    tmp |= ((unsigned int)sbox[(unsigned char)((val >>  8) & 0xFF)]) <<  8;
-    tmp |= ((unsigned int)sbox[(unsigned char)((val >> 16) & 0xFF)]) << 16;
-    tmp |= ((unsigned int)sbox[(unsigned char)((val >> 24) & 0xFF)]) << 24;
-
-    return tmp;
-}
-
-unsigned int aes_rot_dword(unsigned int val)
-{
-    unsigned int tmp = val;
-   
-    return (val >> 8) | ((tmp & 0xFF) << 24);
-}
-
-unsigned int aes_swap_dword(unsigned int val)
-{
-    return (((val & 0x000000FF) << 24) |
-            ((val & 0x0000FF00) <<  8) |
-            ((val & 0x00FF0000) >>  8) |
-            ((val & 0xFF000000) >> 24) );
-}
-
-void key_expansion3(unsigned char *key, unsigned char *round)
-{
-    unsigned int *w = (unsigned int *)round;
-    unsigned int  t;
-    int      i = 0;
-
-    printf("Key Expansion:\n");
-    do {
-        w[i] = *((unsigned int *)&key[i * 4 + 0]);
-    } while (++i < 4);
-   
-    do {
-        printf("    %2.2d: ", i);
-        if ((i % 4) == 0) {
-            t = aes_rot_dword(w[i - 1]);
-            t = aes_sub_dword(t);
-            t = t ^ aes_swap_dword(rcon[i/4 - 1]);
-        } else if (4 > 6 && (i % 4) == 4) {
-            t = aes_sub_dword(w[i - 1]);
-        } else {
-            t = w[i - 1];
-        }
-        w[i] = w[i - 4] ^ t;
-    } while (++i < 4 * (10 + 1));
+  printf("add_round_key ");
+	// static void AddRoundKey(uint8_t round, state_t* state, const uint8_t* RoundKey)
+  uchar i, j;
+  for(i = 0; i < 4; ++i)
+  {
+    for (j = 0; j < 4; ++j)
+    {
+      printf("%d", round_key[(round * 16) + (i * 4) + j]);
+      (*state)[i][j] ^= round_key[(round * 16) + (i * 4) + j];
+    }
+  }
 }
 
 
-void print_state(unsigned char state[4][6])
+void print_state(block * state)
 {
     int i,j;
     printf("State:\n");
     for(i=0;i<4;i++)
     {
-      for(j=0;j<6;j++)
+      for(j=0;j<4;j++)
       { 
-        printf("%x ", state[i][j] & 0xFF);
+        printf("%x ", (*state)[i][j] & 0xFF);
       }
       printf("\n");
     }
     printf("\n");
 }
 
-void print_key(unsigned char *key)
+void print_key(uchar *key)
 {
     printf("Key: ");
     int i=0;
@@ -501,23 +520,106 @@ void print_key(unsigned char *key)
 
 void set_mode(int mode, int inverse)
 {
-/*
-aes_mode {
-    int num_cols;
-    int num_rnds;
-    int key_len;
-    int key_expanded_size;
-    int inverse
-} */
+    aes = (aes_mode){
+      mode,
+      4, // num_cols
+      10, // num_rnds
+      16, // key_len
+      176, // key_exp_len
+      4, // num_key_words
+      inverse
+    };
 
-    if(mode == 256)
-    	aes = (aes_mode){6, 14, 32, 240, inverse};
     if(mode == 192)
-	aes = (aes_mode){5, 12, 24, 208, inverse};
-    else //mode == 128
-	aes = (aes_mode){4, 10, 16, 176, inverse};
+    {
+      aes.num_cols = 5;
+      aes.num_rnds = 12;
+      aes.key_len = 24;
+      aes.key_exp_len = 208;
+    }
+    if(mode == 256)
+    {
+      aes.num_cols = 6;
+      aes.num_rnds = 14;
+      aes.key_len = 32;
+      aes.key_exp_len = 240;
+    }
+    aes.num_key_words = aes.key_exp_len / 32;
+	   
 }
 
+void encrypt(block * state, uchar * round_key)
+{
+  uchar round = 0;
+  print_key(round_key);
+  // Add the First round key to the state before starting the rounds.
+  // print_state(state);
+  add_round_key(state, round_key, 0); 
+  print_key(round_key);
+  // print_state(state);
+  // There will be Nr rounds.
+  // The first Nr-1 rounds are identical.
+  // These Nr-1 rounds are executed in the loop below.
+  for(round = 1; round < aes.num_rnds; ++round)
+  {
+    printf("Round %d %d", round, aes.num_rnds);
+    print_key(round_key);
+    print_state(state);
+    substitute_bytes(state);
+    print_state(state);
+    shift_rows(state);
+    print_state(state);
+    mix_columns(state);
+    print_state(state);
+    add_round_key(state, round_key, round);
+    
+  }
+  
+  // The last round is given below.
+  // The MixColumns function is not here in the last round.
+  print_state(state);
+  substitute_bytes(state);
+  print_state(state);
+  shift_rows(state);
+  print_state(state);
+  add_round_key(state, round_key, aes.num_rnds);
+  print_state(state);
+}
+
+void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * output, int len)
+{
+  uchar state[BLOCK_LEN];
+  unsigned i;
+  int bi;
+  printf("here");
+  set_mode(mode, FALSE);
+  uchar round_key[512];
+  expand_key(round_key, key);
+  for (i = 0, bi = BLOCK_LEN; i < len; ++i, ++bi)
+  {
+    if (bi == BLOCK_LEN) // we need to regen xor compliment in buffer 
+    {
+      memcpy(state, iv, BLOCK_LEN);
+      encrypt((block*)state, round_key);
+       // Increment Iv and handle overflow
+      for (bi = (BLOCK_LEN - 1); bi >= 0; --bi)
+      {
+        // inc will overflow
+        if (iv[bi] == 255)
+        {
+          iv[bi] = 0;
+          continue;
+        }
+        iv[bi] += 1;
+        break;   
+      }
+      bi = 0;
+    }
+
+    output[i] = (input[i] ^ state[bi]);
+  }
+}
+/*
 void encrypt(unsigned char cipher_key[32], unsigned char *plaintext, unsigned char iv[32], unsigned char * enc_buf)
 {
 	int i,j;
@@ -536,7 +638,7 @@ void encrypt(unsigned char cipher_key[32], unsigned char *plaintext, unsigned ch
 	unsigned char round_key[128];
 	unsigned char expanded_key[128];
 	unsigned char expanded_key3[128];
-	/* begin with a key addition*/
+	/// begin with a key addition
 	printf("-------------------------");
 	expand_key2(cipher_key, round_key);
 	print_key(round_key);
@@ -544,13 +646,13 @@ void encrypt(unsigned char cipher_key[32], unsigned char *plaintext, unsigned ch
 //	print_key(expanded_key);
 	//key_expansion3(cipher_key, round_key);
 	//print_key(round_key);
-	/*for(i=0;i<128;i++)
-        {
-		expanded_key_results[i] = round_key[i];
-	}*/
+	//for(i=0;i<128;i++)
+  //      {
+	//	expanded_key_results[i] = round_key[i];
+	//}
 	printf("------------------------");
 	add_round_key(state, round_key, 0);
-	/* ROUNDS-1 ordinary rounds*/
+	// ROUNDS-1 ordinary rounds
 	for(round_number = 0; round_number < 9; round_number++)
 	{
 		printf("\nRound %d - ", round_number);
@@ -564,7 +666,7 @@ void encrypt(unsigned char cipher_key[32], unsigned char *plaintext, unsigned ch
 		print_state(state);
 		add_round_key(state, round_key, round_number);
 	}
-	/* Last round is special: there is no mix_columns*/
+	// Last round is special: there is no mix_columns
 	substitute_bytes(state, inverse);
 	shift_rows(state, inverse);
 	add_round_key(state, round_key, round_number);
@@ -577,7 +679,7 @@ void encrypt(unsigned char cipher_key[32], unsigned char *plaintext, unsigned ch
 	  }
 	}
 }
-
+*/
 void decrypt(unsigned char cipher_key[32], unsigned char * ciphertext, unsigned char * decyphered_text)
 {
 	int i,j;
@@ -629,7 +731,29 @@ void decrypt(unsigned char cipher_key[32], unsigned char * ciphertext, unsigned 
 //	print_state(state, TRUE);
 }
 
-
+int main()
+{
+    uchar key[32] = {   0x60,0x3d,0xeb,0x10,0x15,0xca,0x71,0xbe,
+                        0x2b,0x73,0xae,0xf0,0x85,0x7d,0x77,0x81,
+                        0x1f,0x35,0x2c,0x07,0x3b,0x61,0x08,0xd7,
+                        0x2d,0x98,0x10,0xa3,0x09,0x14,0xdf,0xf4};
+    
+    uchar iv[16] = {0xf0,0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8,0xf9,0xfa,0xfb,0xfc,0xfd,0xfe,0xff};
+    
+    
+    uchar in[32] = {    0x6b,0xc1,0xbe,0xe2,0x2e,0x40,0x9f,0x96,
+                        0xe9,0x3d,0x7e,0x11,0x73,0x93,0x17,0x2a,
+                        0xae,0x2d,0x8a,0x57,0x1e,0x03,0xac,0x9c,
+                        0x9e,0xb7,0x6f,0xac,0x45,0xaf,0x8e,0x51};
+    
+    uchar expected_out[32] = {   0x60,0x1e,0xc3,0x13,0x77,0x57,0x89,0xa5,
+                        0xb7,0xa7,0xf5,0x04,0xbb,0xf3,0xd2,0x28,
+                        0xf4,0x43,0xe3,0xca,0x4d,0x62,0xb5,0x9a,
+                        0xca,0x84,0xe9,0x90,0xca,0xca,0xf5,0xc5};
+    uchar out[32];
+    
+    aes_encrypt(256, key, iv, in, out, 32);
+}
 
 
 #endif
