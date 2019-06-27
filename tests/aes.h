@@ -536,6 +536,7 @@ void set_mode(int mode, int inverse)
       aes.num_rnds = 12;
       aes.key_len = 24;
       aes.key_exp_len = 208;
+      aes.num_key_words = 6;
     }
     if(mode == 256)
     {
@@ -543,8 +544,10 @@ void set_mode(int mode, int inverse)
       aes.num_rnds = 14;
       aes.key_len = 32;
       aes.key_exp_len = 240;
+      aes.num_key_words = 8;
     }
-    aes.num_key_words = aes.key_exp_len / 32;
+    // aes.num_key_words = aes.key_exp_len / 32;
+
 	   
 }
 
@@ -591,10 +594,11 @@ void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * outpu
   uchar state[BLOCK_LEN];
   unsigned i;
   int bi;
-  printf("here");
   set_mode(mode, FALSE);
   uchar round_key[512];
   expand_key(round_key, key);
+  print_key(key);
+  print_key(round_key);
   for (i = 0, bi = BLOCK_LEN; i < len; ++i, ++bi)
   {
     if (bi == BLOCK_LEN) // we need to regen xor compliment in buffer 
@@ -619,67 +623,7 @@ void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * outpu
     output[i] = (input[i] ^ state[bi]);
   }
 }
-/*
-void encrypt(unsigned char cipher_key[32], unsigned char *plaintext, unsigned char iv[32], unsigned char * enc_buf)
-{
-	int i,j;
-	int round_number;
-        int inverse = FALSE;
-        set_mode(256, FALSE);
-	unsigned char state[4][aes.num_cols];
-        int num_iter = sizeof(plaintext) / 4;
-	for(i=0;i<24;i++)
-	{
-		int r = (int)i/aes.num_cols;
-		state[r][i%aes.num_cols] = iv[i];
-	}
-	print_state(state);
-	//*state = *plaintext;
-	unsigned char round_key[128];
-	unsigned char expanded_key[128];
-	unsigned char expanded_key3[128];
-	/// begin with a key addition
-	printf("-------------------------");
-	expand_key2(cipher_key, round_key);
-	print_key(round_key);
-//	expand_key2(cipher_key, round_key);
-//	print_key(expanded_key);
-	//key_expansion3(cipher_key, round_key);
-	//print_key(round_key);
-	//for(i=0;i<128;i++)
-  //      {
-	//	expanded_key_results[i] = round_key[i];
-	//}
-	printf("------------------------");
-	add_round_key(state, round_key, 0);
-	// ROUNDS-1 ordinary rounds
-	for(round_number = 0; round_number < 9; round_number++)
-	{
-		printf("\nRound %d - ", round_number);
-		print_key(round_key);
-		print_state(state);
-		substitute_bytes(state, inverse);
-		print_state(state);
-		shift_rows(state, inverse);
-		print_state(state);
-		mix_columns(state, inverse);
-		print_state(state);
-		add_round_key(state, round_key, round_number);
-	}
-	// Last round is special: there is no mix_columns
-	substitute_bytes(state, inverse);
-	shift_rows(state, inverse);
-	add_round_key(state, round_key, round_number);
-	print_state(state);
-	for(i=0;i<4;i++)
-	{
-	  for(j=0;j<aes.num_cols;j++)
-	  {
-	    enc_buf[i*4+j] = state[i][j];
-	  }
-	}
-}
-*/
+
 void decrypt(unsigned char cipher_key[32], unsigned char * ciphertext, unsigned char * decyphered_text)
 {
 	int i,j;
