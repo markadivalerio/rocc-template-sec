@@ -85,12 +85,13 @@ typedef struct aes_mode {
 } aes_mode;
 
 aes_mode aes;//global aes
+aes_mode aes2;//global aes
 
 
 
 
 void print_state(block *state);
-void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * output, int len);
+void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * output, int len, int is_decrypt);
 //void decrypt(unsigned char cipher_key[32], unsigned char *ciphertext, unsigned char * deciphered_text);
 
 
@@ -134,17 +135,17 @@ static const uchar rsbox[256] = {
 0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d }; //F
 
 static const uchar mcbox[4][4] = {
-	{0x02, 0x03, 0x01, 0x01},
-	{0x01, 0x02, 0x03, 0x01},
-	{0x01, 0x01, 0x02, 0x03},
-	{0x03, 0x01, 0x01, 0x02}
+  {0x02, 0x03, 0x01, 0x01},
+  {0x01, 0x02, 0x03, 0x01},
+  {0x01, 0x01, 0x02, 0x03},
+  {0x03, 0x01, 0x01, 0x02}
 };
 
 static const uchar rmcbox[4][4] = {
-	{0x0E, 0x0B, 0x0D, 0x09},
-	{0x09, 0x0E, 0x0B, 0x0D},
-	{0x0D, 0x09, 0x0E, 0x0B},
-	{0x0B, 0x0D, 0x09, 0x0E}
+  {0x0E, 0x0B, 0x0D, 0x09},
+  {0x09, 0x0E, 0x0B, 0x0D},
+  {0x0D, 0x09, 0x0E, 0x0B},
+  {0x0B, 0x0D, 0x09, 0x0E}
 };
 
 uchar rcon[11] = {0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
@@ -177,60 +178,59 @@ uchar rcon[11] = {0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x
 
 void substitute_bytes(block * state)
 {
-	printf("substitute_bytes ");
-	
-	int c, r;
-	for(r = 0; r < 4; r++)
-	{
-		for(c = 0; c < 4; c++)
-		{
-			if(aes.inverse)
-				(*state)[r][c] = rsbox[(*state)[r][c]];
-			else
-				(*state)[r][c] = sbox[(*state)[r][c]];
-		}
-	}
+  
+  int c, r;
+  for(r = 0; r < 4; r++)
+  {
+    for(c = 0; c < 4; c++)
+    {
+      if(aes.inverse)
+        (*state)[r][c] = rsbox[(*state)[r][c]];
+      else
+        (*state)[r][c] = sbox[(*state)[r][c]];
+    }
+  }
 }
 
 
 // void shift_row(uchar * row, signed int delta)
 // //shifts single row left (inverse=false) or right (inverse=true)
-// {	
-// 	uchar temp[4];
+// {  
+//  uchar temp[4];
 //   int right = TRUE;
-// 	if(delta == 0)
-// 		return;
+//  if(delta == 0)
+//    return;
 
 //   if(delta < 0)
 //   {
 //     delta *= -1;
 //     right = FALSE;
 //   }
-	
-// 	for(;delta>0;delta--)
-// 	{
-// 	  if(right)
-// 	  {
-//   		const uchar temp = row[3];
-//   		row[3] = row[2];
-//   		row[2] = row[1];
-//   		row[1] = row[0];
-//   		row[0] = temp;
-// 	  }
-// 	  else // left
-// 	  {
-// 		    const uchar temp = row[0];
+  
+//  for(;delta>0;delta--)
+//  {
+//    if(right)
+//    {
+//      const uchar temp = row[3];
+//      row[3] = row[2];
+//      row[2] = row[1];
+//      row[1] = row[0];
+//      row[0] = temp;
+//    }
+//    else // left
+//    {
+//        const uchar temp = row[0];
 //         row[0] = row[1];
 //         row[1] = row[2];
 //         row[2] = row[3];
 //         row[3] = temp;
-// 	  }
-// 	}
+//    }
+//  }
 // }
 
 // void shift_rows(block * state)
 // {
-// 	printf("shift_rows ");
+//  printf("shift_rows ");
 //   signed int r;
 //   for(r = 1; r < 4; r++) // row 0 does not shift.
 //   {
@@ -240,7 +240,6 @@ void substitute_bytes(block * state)
 
 void shift_rows(block* state)
 {
-  printf("shift_rows ");
   uchar temp;
 
   // Rotate first row 1 columns to left  
@@ -337,59 +336,59 @@ void mix_columns(block* state)
 
 // unsigned char mul_column(unsigned char col[4], int row, unsigned char mbox[4][4])
 // {
-// 	unsigned char * temp[4];
-	
-// 	unsigned char res = (
-// 		(col[0] * mbox[row][0])
-// 		+ (col[1] * mbox[row][1])
-// 		+ (col[2] * mbox[row][2])
-// 		+ (col[3] * mbox[row][3]));
-// 	if((res & 0x80) == 0)
-// 	{
-// 		res = res << 1;
-// 		res = res ^ 0x00;
-// 	}
-// 	else
-// 	{
-// 		res = res << 1;
-// 		res = res ^ 0x1b;
-// 	}
-// 	return res;
+//  unsigned char * temp[4];
+  
+//  unsigned char res = (
+//    (col[0] * mbox[row][0])
+//    + (col[1] * mbox[row][1])
+//    + (col[2] * mbox[row][2])
+//    + (col[3] * mbox[row][3]));
+//  if((res & 0x80) == 0)
+//  {
+//    res = res << 1;
+//    res = res ^ 0x00;
+//  }
+//  else
+//  {
+//    res = res << 1;
+//    res = res ^ 0x1b;
+//  }
+//  return res;
 // }
 
 // void mix_columns(unsigned char state[4][4], int inverse)
 // {
-// 	unsigned char mbox[4][4];
-// 	if(inverse)
-// 		memcpy(mbox, rmc_box, sizeof(mbox));
-// 	else
-// 		memcpy(mbox, mc_box, sizeof(mbox)); 
-// 	printf("mix_columns");
-// 	unsigned char temp[4][4] = {{0}};
-// 	int r, c;
-// 	for(c=0;c<4;c++)
-// 	{
-// 	    unsigned char temp[4];
-// 	    mix_columns2(state[0][c], state[1][c], state[2][c], state[3][c], temp);
-// 	    state[0][c] = temp[0];
-// 	    state[1][c] = temp[1];
-// 	    state[2][c] = temp[2];
-// 	    state[3][c] = temp[3];
-// 	}
-// 	/*printf("before ");
-// 	print_state(state, TRUE);
-// 	for(c = 0; c < 4; c++)
-// 	{
-// 		unsigned char col[4] = {state[0][c], state[1][c], state[2][c], state[3][c]};
-// 		for(r = 0; r < 4; r++)
-// 		{
-// 			temp[r][c] = mul_column(col, r, mbox);
-// 		}
-// 	}
-// 	memcpy(state, temp, sizeof(temp));
-	
-// 	printf("after ");
-// 	print_state(state, TRUE);*/
+//  unsigned char mbox[4][4];
+//  if(inverse)
+//    memcpy(mbox, rmc_box, sizeof(mbox));
+//  else
+//    memcpy(mbox, mc_box, sizeof(mbox)); 
+//  printf("mix_columns");
+//  unsigned char temp[4][4] = {{0}};
+//  int r, c;
+//  for(c=0;c<4;c++)
+//  {
+//      unsigned char temp[4];
+//      mix_columns2(state[0][c], state[1][c], state[2][c], state[3][c], temp);
+//      state[0][c] = temp[0];
+//      state[1][c] = temp[1];
+//      state[2][c] = temp[2];
+//      state[3][c] = temp[3];
+//  }
+//  /*printf("before ");
+//  print_state(state, TRUE);
+//  for(c = 0; c < 4; c++)
+//  {
+//    unsigned char col[4] = {state[0][c], state[1][c], state[2][c], state[3][c]};
+//    for(r = 0; r < 4; r++)
+//    {
+//      temp[r][c] = mul_column(col, r, mbox);
+//    }
+//  }
+//  memcpy(state, temp, sizeof(temp));
+  
+//  printf("after ");
+//  print_state(state, TRUE);*/
 // }
 
 // void rotate_word(uchar * word)
@@ -478,14 +477,12 @@ void expand_key(uchar * round_key, uchar * key)
 
 void add_round_key(block *state, uchar *round_key, int round)
 {
-  printf("add_round_key ");
-	// static void AddRoundKey(uint8_t round, state_t* state, const uint8_t* RoundKey)
+  // static void AddRoundKey(uint8_t round, state_t* state, const uint8_t* RoundKey)
   uchar i, j;
   for(i = 0; i < 4; ++i)
   {
     for (j = 0; j < 4; ++j)
     {
-      printf("%d", round_key[(round * 16) + (i * 4) + j]);
       (*state)[i][j] ^= round_key[(round * 16) + (i * 4) + j];
     }
   }
@@ -518,92 +515,114 @@ void print_key(uchar *key)
     printf("\n");
 }
 
-void set_mode(int mode, int inverse)
+void set_mode(int mode, int inverse, int is_decrypt)
 {
-    aes = (aes_mode){
-      mode,
-      4, // num_cols
-      10, // num_rnds
-      16, // key_len
-      176, // key_exp_len
-      4, // num_key_words
-      inverse
-    };
-
-    if(mode == 192)
+    if(!is_decrypt)
     {
-      aes.num_cols = 5;
-      aes.num_rnds = 12;
-      aes.key_len = 24;
-      aes.key_exp_len = 208;
-      aes.num_key_words = 6;
+        aes = (aes_mode){
+          mode,
+          4, // num_cols
+          10, // num_rnds
+          16, // key_len
+          176, // key_exp_len
+          4, // num_key_words
+          inverse
+        };
+    
+        if(mode == 192)
+        {
+          aes.num_cols = 5;
+          aes.num_rnds = 12;
+          aes.key_len = 24;
+          aes.key_exp_len = 208;
+          aes.num_key_words = 6;
+        }
+        if(mode == 256)
+        {
+          aes.num_cols = 6;
+          aes.num_rnds = 14;
+          aes.key_len = 32;
+          aes.key_exp_len = 240;
+          aes.num_key_words = 8;
+        }
     }
-    if(mode == 256)
+    else
     {
-      aes.num_cols = 6;
-      aes.num_rnds = 14;
-      aes.key_len = 32;
-      aes.key_exp_len = 240;
-      aes.num_key_words = 8;
+        aes2 = (aes_mode){
+          mode,
+          4, // num_cols
+          10, // num_rnds
+          16, // key_len
+          176, // key_exp_len
+          4, // num_key_words
+          inverse
+        };
+    
+        if(mode == 192)
+        {
+          aes2.num_cols = 5;
+          aes2.num_rnds = 12;
+          aes2.key_len = 24;
+          aes2.key_exp_len = 208;
+          aes2.num_key_words = 6;
+        }
+        if(mode == 256)
+        {
+          aes2.num_cols = 6;
+          aes2.num_rnds = 14;
+          aes2.key_len = 32;
+          aes2.key_exp_len = 240;
+          aes2.num_key_words = 8;
+        }
+        // aes.num_key_words = aes.key_exp_len / 32;
+        memcpy(&aes, &aes2, sizeof(aes2));
     }
-    // aes.num_key_words = aes.key_exp_len / 32;
-
-	   
+     
 }
 
 void encrypt(block * state, uchar * round_key)
 {
   uchar round = 0;
-  print_key(round_key);
   // Add the First round key to the state before starting the rounds.
   // print_state(state);
   add_round_key(state, round_key, 0); 
-  print_key(round_key);
   // print_state(state);
   // There will be Nr rounds.
   // The first Nr-1 rounds are identical.
   // These Nr-1 rounds are executed in the loop below.
   for(round = 1; round < aes.num_rnds; ++round)
   {
-    printf("Round %d %d", round, aes.num_rnds);
-    print_key(round_key);
-    print_state(state);
     substitute_bytes(state);
-    print_state(state);
     shift_rows(state);
-    print_state(state);
     mix_columns(state);
-    print_state(state);
     add_round_key(state, round_key, round);
     
   }
   
   // The last round is given below.
   // The MixColumns function is not here in the last round.
-  print_state(state);
   substitute_bytes(state);
-  print_state(state);
   shift_rows(state);
-  print_state(state);
   add_round_key(state, round_key, aes.num_rnds);
-  print_state(state);
 }
 
-void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * output, int len)
+void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * output, int len, int is_decrypt)
 {
   uchar state[BLOCK_LEN];
   unsigned i;
   int bi;
-  set_mode(mode, FALSE);
+  set_mode(mode, FALSE, is_decrypt);
   uchar round_key[512];
   expand_key(round_key, key);
-  print_key(key);
-  print_key(round_key);
+  
+  print_arr("IV", iv, 16);
+  print_arr("Round Key:", round_key, 32);
   for (i = 0, bi = BLOCK_LEN; i < len; ++i, ++bi)
   {
     if (bi == BLOCK_LEN) // we need to regen xor compliment in buffer 
     {
       memcpy(state, iv, BLOCK_LEN);
+      print_state((block *)state);
       encrypt((block*)state, round_key);
        // Increment Iv and handle overflow
       for (bi = (BLOCK_LEN - 1); bi >= 0; --bi)
@@ -626,54 +645,66 @@ void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * outpu
 
 void decrypt(unsigned char cipher_key[32], unsigned char * ciphertext, unsigned char * decyphered_text)
 {
-	int i,j;
-	int round;
-	int inverse = TRUE;
-	/* To decrypt:
-	 *   apply the inverse operations of the encrypt routine,
-	 *   in opposite order
-	 *
-	 * - AddRoundKey is equal to its inverse)
-	 * - the inverse of SubBytes with table S is
-	 *             SubBytes with the inverse table of S)
-	 * - the inverse of Shiftrows is Shiftrows over
-	 *       a suitable distance)*/
+  int i,j;
+  int round;
+  int inverse = TRUE;
+  /* To decrypt:
+   *   apply the inverse operations of the encrypt routine,
+   *   in opposite order
+   *
+   * - AddRoundKey is equal to its inverse)
+   * - the inverse of SubBytes with table S is
+   *             SubBytes with the inverse table of S)
+   * - the inverse of Shiftrows is Shiftrows over
+   *       a suitable distance)*/
 
-	/* First the special round:
-	 *   without InvMixColumns
-	 *   with extra AddRoundKey
-	*/
-//	unsigned char state[4][4];
-//	int iterations = sizeof(ciphertext)/4;
-/*	for(int i = 0; i < 4; ++i)
-	{
-    		state[i][0] = ciphertext[i*4];
-		state[i][1] = ciphertext[i*4+1];
-		state[i][2] = ciphertext[i*4+2];
-		state[i][3] = ciphertext[i*4+3];
-	}*/
-	//unsigned char round_key[128];
-	//key_expansion3(cipher_key, round_key);
+  /* First the special round:
+   *   without InvMixColumns
+   *   with extra AddRoundKey
+  */
+//  unsigned char state[4][4];
+//  int iterations = sizeof(ciphertext)/4;
+/*  for(int i = 0; i < 4; ++i)
+  {
+        state[i][0] = ciphertext[i*4];
+    state[i][1] = ciphertext[i*4+1];
+    state[i][2] = ciphertext[i*4+2];
+    state[i][3] = ciphertext[i*4+3];
+  }*/
+  //unsigned char round_key[128];
+  //key_expansion3(cipher_key, round_key);
 
         /* begin with a key addition*/
 //        key_expansion(cipher_key, expanded_key, 9);
-//	print_key(cipher_key);	
-//	add_round_key(state, expanded_key, 10);
-//	shift_rows(state, inverse);
-	/* ROUNDS-1 ordinary rounds*/
-/*	for(round = 9;round > 0; round--)
-	{
-		add_round_key(state, round_key, round);
-		mix_columns(state, inverse);
-		substitute_bytes(state, inverse);
-		shift_rows(state, inverse);
+//  print_key(cipher_key);  
+//  add_round_key(state, expanded_key, 10);
+//  shift_rows(state, inverse);
+  /* ROUNDS-1 ordinary rounds*/
+/*  for(round = 9;round > 0; round--)
+  {
+    add_round_key(state, round_key, round);
+    mix_columns(state, inverse);
+    substitute_bytes(state, inverse);
+    shift_rows(state, inverse);
                 print_state(state, TRUE);
-	}
+  }
 */
-	/* End with the extra key addition*/
-//	add_round_key(state, round_key, 0);
-//	print_state(state, TRUE);
+  /* End with the extra key addition*/
+//  add_round_key(state, round_key, 0);
+//  print_state(state, TRUE);
 }
+
+
+print_arr(char *label, uchar * arr, int len)
+{
+    printf("%s: ",label);
+    for(int i=0;i<len;i++)
+    {
+        printf("%x ", arr[i]);
+    }
+    printf("\n");
+}
+
 
 int main()
 {
@@ -683,9 +714,13 @@ int main()
                         0x2d,0x98,0x10,0xa3,0x09,0x14,0xdf,0xf4};
     
     uchar iv[16] = {0xf0,0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8,0xf9,0xfa,0xfb,0xfc,0xfd,0xfe,0xff};
-    
+    uchar iv2[16] = {0xf0,0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8,0xf9,0xfa,0xfb,0xfc,0xfd,0xfe,0xff};
     
     uchar in[32] = {    0x6b,0xc1,0xbe,0xe2,0x2e,0x40,0x9f,0x96,
+                        0xe9,0x3d,0x7e,0x11,0x73,0x93,0x17,0x2a,
+                        0xae,0x2d,0x8a,0x57,0x1e,0x03,0xac,0x9c,
+                        0x9e,0xb7,0x6f,0xac,0x45,0xaf,0x8e,0x51};
+    uchar in2[32] = {    0x6b,0xc1,0xbe,0xe2,0x2e,0x40,0x9f,0x96,
                         0xe9,0x3d,0x7e,0x11,0x73,0x93,0x17,0x2a,
                         0xae,0x2d,0x8a,0x57,0x1e,0x03,0xac,0x9c,
                         0x9e,0xb7,0x6f,0xac,0x45,0xaf,0x8e,0x51};
@@ -695,8 +730,21 @@ int main()
                         0xf4,0x43,0xe3,0xca,0x4d,0x62,0xb5,0x9a,
                         0xca,0x84,0xe9,0x90,0xca,0xca,0xf5,0xc5};
     uchar out[32];
+    uchar out2[32];
     
-    aes_encrypt(256, key, iv, in, out, 32);
+    aes_encrypt(256, key, iv, in, out, 32, FALSE);
+    
+    // print_state((block*)out);
+    print_arr("Encrypted", out, 32);
+    
+    printf("\n\n");
+    
+    uchar iv3[16];
+    memcpy(iv3, out, 16);
+    aes_encrypt(256, key, iv2, out, out2, 32, TRUE);
+    
+    print_state((block*)out2);
+    
 }
 
 
