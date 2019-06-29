@@ -116,15 +116,18 @@ uint128 u128_shift_left(uint128 num)
     return num;
 }
 
-void u128_xor(uint128 a, uint128 b, uint128 * res)
+uint128 u128_xor(uint128 a, uint128 b)
 {
-  res = {(a.hi ^ b.hi), (a.lo ^ b.lo)};
+  uint128 res = (uint128) {(a.hi ^ b.hi), (a.lo ^ b.lo)};
+  return res;
 }
 
-void u128_and(uint128 a, uint128 b, uint128 * res)
+uint128 u128_and(uint128 a, uint128 b)
 {
-  res = {(a.hi & b.hi), (a.lo & b.lo)};
+  uint128 res = (uint128){(a.hi & b.hi), (a.lo & b.lo)};
+  return res;
 }
+
 int u128_compare(uint128 a, uint128 b)
 {
   return  (((a.hi > b.hi) || ((a.hi == b.hi) && (a.lo > b.lo))) ? 1 : 0) 
@@ -220,21 +223,23 @@ uint128 u128_subtract(uint128 left, uint128 right)
     return result;
 }
 
-void sub128(uint128 N, uint128 M, uint128 res)
-{
-	res.lo = N.lo - M.lo;
-	uint64_t C = (((res.lo & M.lo) & 1) + (M.lo >> 1) + (res.lo >> 1)) >> 63;
-	res.hi = N.hi - (M.hi + C);
-}
+// void sub128(uint128 N, uint128 M, uint128 res)
+// {
+// 	res.lo = N.lo - M.lo;
+// 	uint64_t C = (((res.lo & M.lo) & 1) + (M.lo >> 1) + (res.lo >> 1)) >> 63;
+// 	res.hi = N.hi - (M.hi + C);
+// }
 
 
-void u128_add(uint128 left, uint128 right, uint128 * res)
+uint128 u128_add(uint128 left, uint128 right)
 {
+    uint128 res;
     result.hi = left.hi + right.hi;
     result.lo = left.lo + right.lo;
     if(result.lo < left.lo || result.lo < right.lo)
         result.hi += 1;
     // TODO detect overflow?
+    return res;
 }
 
 uint128 mult64to128(uint64_t u, uint64_t v)
@@ -633,7 +638,7 @@ uint128 mod_exponentiation(uint128 base, uint128 expo, uint128 mod)
     {   
         return zero;
     }
-    uint128 m_minus_1 = sub128(mod, one);   
+    uint128 m_minus_1 = u128_subtract(mod, one);   
     uint128 m_minus_1_squared = mult128(m_minus_1, m_minus_1);
     if(u128_compare(m_minus_1_squared, mod) < 0)
     {
