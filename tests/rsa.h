@@ -88,7 +88,7 @@ typedef struct rsaData {
 void encrypt(rsaData rsa, uint128 * encrypted);
 void decrypt(rsaData rsa, uint128 ciphertext[7], char * decrypted);
 
-uint64_t leftmostbit = 0x8000000000000000ULL;
+uint64_t leftmostbit =  0x8000000000000000ULL;
 uint64_t rightmostbit = 0x0000000000000001ULL;
 
 int u128_is_even(uint128 num)
@@ -110,8 +110,8 @@ uint128 u128_shift_right(uint128 num)
 uint128 u128_shift_left(uint128 num)
 {
     num.hi <<= 1;
-    if(num.lo & leftmostbit != 0)
-        num.hi |= rightmostbit;
+    if(num.lo >> 63)
+        num.hi = num.hi | rightmostbit;
     num.lo <<= 1;
     return num;
 }
