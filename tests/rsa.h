@@ -669,7 +669,7 @@ uint128 mod_exponentiation(uint128 base, uint128 expo, uint128 mod)
             divmod128by128(temp, mod, temp2);
             result = temp2[1];
         }
-        expo = shiftright128(expo, 1);
+        expo = u128_shift_right(expo);
         // printf("%llu %llu", (base*base), ((base * base) % mod));
         uint128 temp3 = mult128(base, base);
         uint128 temp4[2];
