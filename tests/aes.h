@@ -615,8 +615,8 @@ void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * outpu
   uchar round_key[512];
   expand_key(round_key, key);
   
-  print_arr("IV", iv, 16);
-  print_arr("Round Key:", round_key, 32);
+  // print_arr("IV", iv, 16);
+  // print_arr("Round Key:", round_key, 32);
   for (i = 0, bi = BLOCK_LEN; i < len; ++i, ++bi)
   {
     if (bi == BLOCK_LEN) // we need to regen xor compliment in buffer 
@@ -695,7 +695,7 @@ void decrypt(unsigned char cipher_key[32], unsigned char * ciphertext, unsigned 
 }
 
 
-print_arr(char *label, uchar * arr, int len)
+void print_arr(char *label, uchar * arr, int len)
 {
     printf("%s: ",label);
     for(int i=0;i<len;i++)
