@@ -131,16 +131,14 @@ uint128 shiftright128(uint128 N, unsigned S)
 	return res;
 }
 
-uint128 u128_xor(uint128 a, uint128 b)
+void u128_xor(uint128 a, uint128 b, uint128 * res)
 {
-  uint128 res = {(a.hi ^ b.hi), (a.lo ^ b.lo)};
-    return res;
+  res = {(a.hi ^ b.hi), (a.lo ^ b.lo)};
 }
 
-uint128 u128_and(uint128 a, uint128 b)
+void u128_and(uint128 a, uint128 b, uint128 * res)
 {
-  uint128 res = {(a.hi & b.hi), (a.lo & b.lo)};
-    return res;
+  res = {(a.hi & b.hi), (a.lo & b.lo)};
 }
 int u128_compare(uint128 a, uint128 b)
 {
@@ -237,26 +235,23 @@ uint128 u128_subtract(uint128 left, uint128 right)
     return result;
 }
 
-uint128 sub128(uint128 N, uint128 M)
+void sub128(uint128 N, uint128 M, uint128 res)
 {
-	uint128 res;
 	res.lo = N.lo - M.lo;
 	uint64_t C = (((res.lo & M.lo) & 1) + (M.lo >> 1) + (res.lo >> 1)) >> 63;
 	res.hi = N.hi - (M.hi + C);
-	return res;
 }
 
 
-uint128 u128_add(uint128 left, uint128 right)
+void u128_add(uint128 left, uint128 right, uint128 * res)
 {
-    uint128 result = {0ULL, 0ULL};
     result.hi = left.hi + right.hi;
     result.lo = left.lo + right.lo;
     if(result.lo < left.lo || result.lo < right.lo)
         result.hi += 1;
     // TODO detect overflow?
-    return result;
 }
+
 uint128 mult64to128(uint64_t u, uint64_t v)
 {
 	uint64_t h, l;
