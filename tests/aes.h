@@ -705,7 +705,7 @@ print_arr(char *label, uchar * arr, int len)
     printf("\n");
 }
 
-
+/*
 int main()
 {
     uchar key[32] = {   0x60,0x3d,0xeb,0x10,0x15,0xca,0x71,0xbe,
@@ -745,7 +745,7 @@ int main()
     
     print_state((block*)out2);
     
-}
+}*/
 
 
 #endif
