@@ -116,21 +116,6 @@ uint128 u128_shift_left(uint128 num)
     return num;
 }
 
-uint128 shiftright128(uint128 N, unsigned S)
-{
-	uint128 res;
-	uint64_t M1, M2;
-	S &= 127;
-
-	M1 = ((((S + 127) | S) & 64) >> 6) - 1llu;
-	M2 = (S >> 6) - 1llu;
-	S &= 63;
-	res.lo = (N.hi >> S) & (~M2);
-	res.hi = (N.hi >> S) & M2;
-	res.lo |= ((N.lo >> S) | ((N.hi << (64 - S)) & M1)) & M2;
-	return res;
-}
-
 void u128_xor(uint128 a, uint128 b, uint128 * res)
 {
   res = {(a.hi ^ b.hi), (a.lo ^ b.lo)};

@@ -86,7 +86,7 @@ int main() {
  	
     for(i=0;i < 7; i++)
     {
-        printf("%c ", (char)decrypted2[i]);
+        printf("%llu ", (unsigned long long) decrypted2[i]);
     }
     printf("\n");
     asm volatile ("fence");
