@@ -20,9 +20,8 @@ typedef struct rsaData {
     uint64_t pubExp;
     uint128 privateExp;
     uint128 mod;
-}
-uint64_t leftmostbit = 0x8000000000000000ULL;
-uint64_t rightmostbit = 0x0000000000000001ULL;
+} rsaData;
+
 #define TRUE 1
 #define FALSE 0
 
@@ -41,7 +40,6 @@ public:
   {
     switch (insn.funct)
     {
-
       default:
         illegal_instruction();
     }
@@ -49,20 +47,19 @@ public:
     return -1; // accelerator currently returns nothing
   }
 
-  int u128_is_even(uint128 num);
-  uint128 u128_shift_right(uint128 num);
-  uint128 u128_shift_left(uint128 num);
-  uint128 u128_xor(uint128 a, uint128 b);
-  uint128 u128_and(uint128 a, uint128 b);
-  uint128 u128_subtract(uint128 left, uint128 right);
-  uint128 u128_add(uint128 left, uint128 right);
-  uint128 u128_multiply(uint128 a, uint128 b);
-  uint128 u128_power(uint128 base, uint128 expo);
-  uint128 big_mod_w_subtract(uint128 numerator, uint128 denominator);
-  uint128 u128_hybrid_mod(uint128 base, uint128 expo, uint128 mod);
-  uint64_t mod_exponentiation(uint64_t base, uint64_t expo, uint64_t mod);
-  uint64_t * encrypt(rsaData rsa, unsigned char * message);
-  unsigned char * decrypt(rsaData rsa, uint64_t * cipher);
+   int u64_is_even(uint64_t num)
+   int u128_is_even(uint128 num)
+  uint128 u128_shift_right(uint128 num)
+  uint128 u128_shift_left(uint128 num)
+  uint128 u128_xor(uint128 a, uint128 b)
+  uint128 u128_and(uint128 a, uint128 b)
+  uint128 u128_subtract(uint128 left, uint128 right)
+  uint128 u128_add(uint128 left, uint128 right)
+  uint128 u128_multiply(uint128 a, uint128 b)
+  uint128 u128_power(uint128 base, uint128 expo)
+  uint64_t mod_exponentiation(uint64_t base, uint64_t expo, uint64_t mod)
+  void encrypt(rsaData rsa, const char message[7], uint64_t encrypted[7])
+  void decrypt(rsaData rsa, uint64_t ciphertext[7], unsigned char decrypted[7])
 
 };
 REGISTER_EXTENSION(rsa, []() { return new rsa_t; })

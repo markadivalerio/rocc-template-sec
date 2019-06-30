@@ -72,7 +72,7 @@ int main() {
 
     /* YOUR CODE HERE: Invoke your RSA acclerator, write the decrypted output of ciphertext to decrypted */
     unsigned char decrypted2[7];
-    decrypt(rsa, encrypted, decrypted2);
+    decrypt(rsa, encrypted, decrypted_text);
     asm volatile ("fence");
 
     //DO NOT MODIFY
@@ -80,8 +80,8 @@ int main() {
     printf("RSA Decryption took %llu cycles!\n", duration);
 
     //char *decrypted_text = (char*)&decrypted;
-    printf("decrypted=%s\n", decrypted2);
-    assert(strcmp(plaintext, decrypted2) == 0);
-    //printf("decrypted=%s\n", decrypted_text);
-    //assert(strcmp(plaintext, decrypted_text) == 0);
+    // printf("decrypted=%s\n", decrypted2);
+    // assert(strcmp(plaintext, decrypted2) == 0);
+    printf("decrypted=%s\n", decrypted_text);
+    assert(strcmp(plaintext, decrypted_text) == 0);
 }
