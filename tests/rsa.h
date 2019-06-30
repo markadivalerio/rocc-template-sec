@@ -88,21 +88,23 @@ typedef struct rsaData {
 void encrypt(rsaData rsa, const char message[7],  uint64_t encrypted[7]);
 void decrypt(rsaData rsa, uint64_t ciphertext[7], unsigned char decrypted[7]);
 
-uint64_t leftmostbit = 0x8000000000000000ULL;
-uint64_t rightmostbit = 0x0000000000000001ULL;
+int u64_is_even(uint64_t num)
+{
+  if(num << 63 == 0)
+    return TRUE;
+  return FALSE;
+}
 
 int u128_is_even(uint128 num)
 {
-  if(num.lo & rightmostbit == 0)
-    return TRUE;
-  return FALSE;
+  return u64_is_even(num.lo);
 }
 
 uint128 u128_shift_right(uint128 num)
 {
     num.lo >>= 1;
-    if(num.hi & rightmostbit == 1)
-        num.lo = num.lo | leftmostbit;
+    if(u64_is_even(num.hi) == FALSE)
+        num.lo = num.lo | (0x1 << 63);
     num.hi >>= 1;
     return num;
 }
@@ -110,8 +112,8 @@ uint128 u128_shift_right(uint128 num)
 uint128 u128_shift_left(uint128 num)
 {
     num.hi <<= 1;
-    if(num.lo & leftmostbit != 0)
-        num.hi |= rightmostbit;
+    if(num.lo >> 63)
+        num.hi = num.hi | 0x01;
     num.lo <<= 1;
     return num;
 }
@@ -185,48 +187,48 @@ uint128 u128_power(uint128 base, uint128 expo)
     return res;
 }
 
-uint128 big_mod_w_subtract(uint128 numerator, uint128 denominator)
-{
-    uint128 result = {};
-    result.hi = numerator.hi;
-    result.lo = numerator.lo;
+// uint128 big_mod_w_subtract(uint128 numerator, uint128 denominator)
+// {
+//     uint128 result = {};
+//     result.hi = numerator.hi;
+//     result.lo = numerator.lo;
     
-    while(result.hi != 0 || result.lo != 0)
-    {
-        // printf("%llu %llu\n", result.hi, result.lo);
-        if(result.hi < denominator.hi || (result.hi == denominator.hi && result.lo < denominator.lo))
-        {
-            break;
-        }
-        result = u128_subtract(result, denominator);
-    }
+//     while(result.hi != 0 || result.lo != 0)
+//     {
+//         // printf("%llu %llu\n", result.hi, result.lo);
+//         if(result.hi < denominator.hi || (result.hi == denominator.hi && result.lo < denominator.lo))
+//         {
+//             break;
+//         }
+//         result = u128_subtract(result, denominator);
+//     }
 
-    return result;
-}
+//     return result;
+// }
 
-uint128 u128_hybrid_mod(uint128 base, uint128 expo, uint128 mod)
-{
-    uint128 zero = {0ULL, 0ULL};
-    uint128 one = {0ULL, 0ULL};
-    if(mod.hi == 0ULL && mod.lo == 1ULL)
-    {
-        return zero;
-    }
-    uint128 result = one;
-    while(expo.hi != 0ULL || expo.lo != 0ULL)
-    {
-        // printf("%llu %llu, %llu %llu, %llu %llu. %llu %llu \n", base, expo, mod, result);
-        if(expo.lo & rightmostbit != 0)
-        {
-            result = u128_multiply(result, base);
-            result = big_mod_w_subtract(result, mod);
-        }
-        expo = u128_shift_right(expo);
-        base = u128_multiply(base, base);
-        base = big_mod_w_subtract(base, mod);
-    }
-    return result;
-}
+// uint128 u128_hybrid_mod(uint128 base, uint128 expo, uint128 mod)
+// {
+//     uint128 zero = {0ULL, 0ULL};
+//     uint128 one = {0ULL, 0ULL};
+//     if(mod.hi == 0ULL && mod.lo == 1ULL)
+//     {
+//         return zero;
+//     }
+//     uint128 result = one;
+//     while(expo.hi != 0ULL || expo.lo != 0ULL)
+//     {
+//         // printf("%llu %llu, %llu %llu, %llu %llu. %llu %llu \n", base, expo, mod, result);
+//         if(expo.lo & rightmostbit != 0)
+//         {
+//             result = u128_multiply(result, base);
+//             result = big_mod_w_subtract(result, mod);
+//         }
+//         expo = u128_shift_right(expo);
+//         base = u128_multiply(base, base);
+//         base = big_mod_w_subtract(base, mod);
+//     }
+//     return result;
+// }
 
 uint64_t mod_exponentiation(uint64_t base, uint64_t expo, uint64_t mod)
 {
@@ -238,7 +240,7 @@ uint64_t mod_exponentiation(uint64_t base, uint64_t expo, uint64_t mod)
     
     while(expo != 0)
     {
-        if(expo % 2ULL == 1ULL)
+        if(u64_is_even(expo) == FALSE)
         {
             result = (result * base) % mod;
         }
