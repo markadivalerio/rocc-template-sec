@@ -82,7 +82,7 @@ typedef struct aes_mode {
   int debug;
 } aes_mode;
 
-aes_mode aes;//global aes
+aes_mode aes; //global aes - keeps static information about the aes encryption itself (mode, bit lengths, etc)
 
 void print_arr(char *label, unsigned char * arr, int len);
 void print_state(block *state);
@@ -110,8 +110,8 @@ static const unsigned char sbox[256] =   {
 0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16 }; //F
 
 /*
-NOT NEEDED FOR CTR
- 
+REVERSE SUB BOX IS NOT NEEDED FOR CTR
+
 static const unsigned char rsbox[256] = {
 0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb, //0
 0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb, //1
@@ -178,9 +178,6 @@ void substitute_bytes(block * state)
   {
     for(c = 0; c < 4; c++)
     {
-      //if(aes.inverse)
-      //  (*state)[r][c] = rsbox[(*state)[r][c]];
-      //else
         (*state)[r][c] = sbox[(*state)[r][c]];
     }
   }
@@ -235,39 +232,37 @@ unsigned char multiply(unsigned char a, unsigned char b) {
     return c;
  }
 
-// MixColumns function mixes the columns of the state matrix
 void mix_columns(block* state)
 {
   unsigned char i;
-  unsigned char temp, Tm, t;
+  unsigned char row_xor, init_first_col, xor_w_right;
   for (i = 0; i < 4; ++i)
   {  
-    t   = (*state)[i][0];
-    temp = (*state)[i][0] ^ (*state)[i][1] ^ (*state)[i][2] ^ (*state)[i][3];
-    Tm  = (*state)[i][0] ^ (*state)[i][1];
-    Tm = xtime(Tm);
-    (*state)[i][0] ^= Tm ^ temp;
-    Tm  = (*state)[i][1] ^ (*state)[i][2];
-    Tm = xtime(Tm);
-    (*state)[i][1] ^= Tm ^ temp;
-    Tm  = (*state)[i][2] ^ (*state)[i][3];
-    Tm = xtime(Tm);
-    (*state)[i][2] ^= Tm ^ temp;
-    Tm  = (*state)[i][3] ^ t;
-    Tm = xtime(Tm);
-    (*state)[i][3] ^= Tm ^ temp;
+    init_first_col = (*state)[i][0];
+    row_xor = (*state)[i][0] ^ (*state)[i][1] ^ (*state)[i][2] ^ (*state)[i][3];
+
+    xor_w_right     = (*state)[i][0] ^ (*state)[i][1];
+    (*state)[i][0] ^= xtime(xor_w_right) ^ row_xor;
+
+    xor_w_right = (*state)[i][1] ^ (*state)[i][2];
+    (*state)[i][1] ^= xtime(xor_w_right) ^ row_xor;
+
+    xor_w_right = (*state)[i][2] ^ (*state)[i][3];
+    (*state)[i][2] ^= xtime(xor_w_right) ^ row_xor;
+
+    xor_w_right = (*state)[i][3] ^ init_first_col;
+    (*state)[i][3] ^= xtime(xor_w_right) ^ row_xor;
   }
 }
 
 void expand_key(unsigned char * round_key, unsigned char * key)
 {
   int i, j, k;
-  unsigned char temp[4]; // Used for the column/row operations
+  unsigned char temp[4];
   
   // The first round key is the key itself.
   for (i = 0; i < aes.num_key_words; ++i)
   {
-    // set_word(round_key, (i*4), key, (i*4));
     round_key[(i * 4) + 0] = key[(i * 4) + 0];
     round_key[(i * 4) + 1] = key[(i * 4) + 1];
     round_key[(i * 4) + 2] = key[(i * 4) + 2];
@@ -278,7 +273,6 @@ void expand_key(unsigned char * round_key, unsigned char * key)
   for (i = aes.num_key_words; i < 4 * (aes.num_rnds + 1); ++i)
   {
     k = (i - 1) * 4;
-    // set_word(temp, 0, round_key, k);
     temp[0]=round_key[k + 0];
     temp[1]=round_key[k + 1];
     temp[2]=round_key[k + 2];
@@ -391,8 +385,6 @@ void encrypt(block * state, unsigned char * round_key)
     add_round_key(state, round_key, round);
   }
   
-  // The last round is given below.
-  // The MixColumns function is not here in the last round.
   debug("Final start", state);
   substitute_bytes(state);
   debug("After Final Substitute", state);
@@ -416,7 +408,7 @@ void aes_encrypt(int mode, unsigned char * key, unsigned char * iv, unsigned cha
     print_arr("After expand round key ", round_key, len); 
   for (i = 0, bi = BLOCK_LEN; i < len; ++i, ++bi)
   {
-    if (bi == BLOCK_LEN) // we need to regen xor compliment in buffer 
+    if (bi == BLOCK_LEN) 
     {
       memcpy(state, iv, BLOCK_LEN);
       encrypt((block*)state, round_key);
