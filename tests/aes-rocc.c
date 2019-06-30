@@ -26,6 +26,7 @@ int main() {
     asm volatile ("fence"); //NOTE: fences are only needed if the accelerator is accessing memory
     //YOUR CODE HERE: Invoke your AES acclerator, write the encrypted output of plaintext to enc_buf
     // encrypt(key[0], plaintext[0], iv[0], enc_buf);
+    printf("Encrypted Ciphertext ");
     aes_encrypt(256, key, iv, plaintext, enc_buf, 32);
     
 /*    int i = 0;
@@ -43,6 +44,7 @@ int main() {
     //END DO NOT MODIFY
 
     //YOUR CODE HERE: Invoke your AES acclerator, write the decrypted output of enc_buf to decrypted_text
+    printf("Decrypted plaintext ");
     aes_encrypt(256, key, iv2, ciphertext, decrypted_text, 32);
     asm volatile ("fence");
     //DO NOT MODIFY

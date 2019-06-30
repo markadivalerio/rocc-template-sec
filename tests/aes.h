@@ -264,27 +264,28 @@ void shift_rows(block* state)
 }
 
 
-// unsigned char multiply(unsigned char a, unsigned char b) {
-//    int i;
+ unsigned char multiply(unsigned char a, unsigned char b) {
+    int i;
 
-//    unsigned char c = 0;
-//    unsigned char d = b;
+    unsigned char c = 0;
+    unsigned char d = b;
 
-//    for (int i=0 ; i < 8 ; i++) {
-//       if (a%2 == 1) c ^= d;
-//       a /= 2;
-//       d = xtime(d);
-//    }
-//    return c;
-// }
+   for (int i=0 ; i < 8 ; i++) {
+       if (a%2 == 1) c ^= d;
+       a /= 2;
+       d = xtime(d);
+    }
+    return c;
+ }
+/*
 unsigned char multiply(unsigned char x, unsigned char y)
 {
   return (((y & 1) * x) ^
        ((y>>1 & 1) * xtime(x)) ^
        ((y>>2 & 1) * xtime(xtime(x))) ^
        ((y>>3 & 1) * xtime(xtime(xtime(x)))) ^
-       ((y>>4 & 1) * xtime(xtime(xtime(xtime(x)))))); /* this last call to xtime() can be omitted */
-  }
+       ((y>>4 & 1) * xtime(xtime(xtime(xtime(x)))))); // this last call to xtime() can be omitted
+  }*/
 
 // MixColumns function mixes the columns of the state matrix
 void mix_columns(block* state)
@@ -301,34 +302,6 @@ void mix_columns(block* state)
     Tm  = (*state)[i][3] ^ t ;              Tm = xtime(Tm);  (*state)[i][3] ^= Tm ^ Tmp ;
   }
 }
-// // MixColumns function mixes the columns of the state matrix
-// void mix_columns2(unsigned char a, unsigned char b, unsigned char c, unsigned char d, unsigned char *temp) {
-//    int i;
-//    unsigned char Tmp,Tm,t,e,f,g,h;
-//    t = a;
-//    Tmp = a ^ b ^ c ^ d;
-//    Tm = a ^ b ; 
-//    Tm = xtime(Tm); 
-//    e = Tm ^ Tmp ^ a ;
-      
-//    Tm = b ^ c; 
-//    Tm = xtime(Tm); 
-//    f = Tm ^ Tmp ^ b;
-
-//    Tm = c ^ d ; 
-//    Tm = xtime(Tm); 
-//    g = Tm ^ Tmp ^ c;
-
-//    Tm = d ^ t ; 
-//    Tm = xtime(Tm); 
-//    h = Tm ^ Tmp ^ d;
-//    temp[0] = e;
-//    temp[1] = f;
-//    temp[2] = g;
-//    temp[3] = h;
-//    printf("output: a=0x%02x b=0x%02x c=0x%02x d=0x%02x\n",e,f,g,h);
-//    //return temp;
-// }
 
 
 // unsigned char mul_column(unsigned char col[4], int row, unsigned char mbox[4][4])
@@ -559,7 +532,7 @@ void aes_encrypt(int mode, unsigned char * key, unsigned char * iv, unsigned cha
     if (bi == BLOCK_LEN) // we need to regen xor compliment in buffer 
     {
       memcpy(state, iv, BLOCK_LEN);
-      print_state((block *)state);
+      //print_state((block *)state);
       encrypt((block*)state, round_key);
        // Increment Iv and handle overflow
       for (bi = (BLOCK_LEN - 1); bi >= 0; --bi)
@@ -578,6 +551,7 @@ void aes_encrypt(int mode, unsigned char * key, unsigned char * iv, unsigned cha
 
     output[i] = (input[i] ^ state[bi]);
   }
+  print_state((block *)output);
 }
 
 void aes_decrypt(int mode, unsigned char * key, unsigned char * iv, unsigned char * input, unsigned char * output, int len)
