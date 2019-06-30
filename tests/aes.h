@@ -71,8 +71,7 @@
 #define BLOCK_LEN 16
 #define xtime(x)   ((x<<1) ^ (((x>>7) & 1) * 0x1b))
 
-typedef unsigned char uchar;
-typedef uchar block[4][4];
+typedef unsigned char block[4][4];
 
 typedef struct aes_mode {
   int mode;
@@ -85,19 +84,14 @@ typedef struct aes_mode {
 } aes_mode;
 
 aes_mode aes;//global aes
-aes_mode aes2;//global aes
 
-
-
-void print_arr(char *label, uchar * arr, int len);
+void print_arr(char *label, unsigned char * arr, int len);
 void print_state(block *state);
-void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * output, int len, int is_decrypt);
+void aes_encrypt(int mode, unsigned char * key, unsigned char * iv, unsigned char * input, unsigned char * output, int len);
 //void decrypt(unsigned char cipher_key[32], unsigned char *ciphertext, unsigned char * deciphered_text);
 
 
-
-
-static const uchar sbox[256] =   {
+static const unsigned char sbox[256] =   {
 //0     1    2      3     4    5     6     7      8    9     A      B    C     D     E     F
 0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76, //0
 0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0, //1
@@ -116,7 +110,7 @@ static const uchar sbox[256] =   {
 0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf, //E
 0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16 }; //F
  
-static const uchar rsbox[256] = {
+static const unsigned char rsbox[256] = {
 0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb, //0
 0x7c, 0xe3, 0x39, 0x82, 0x9b, 0x2f, 0xff, 0x87, 0x34, 0x8e, 0x43, 0x44, 0xc4, 0xde, 0xe9, 0xcb, //1
 0x54, 0x7b, 0x94, 0x32, 0xa6, 0xc2, 0x23, 0x3d, 0xee, 0x4c, 0x95, 0x0b, 0x42, 0xfa, 0xc3, 0x4e, //2
@@ -134,47 +128,26 @@ static const uchar rsbox[256] = {
 0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61, //E
 0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d }; //F
 
-static const uchar mcbox[4][4] = {
+static const unsigned char mcbox[4][4] = {
   {0x02, 0x03, 0x01, 0x01},
   {0x01, 0x02, 0x03, 0x01},
   {0x01, 0x01, 0x02, 0x03},
   {0x03, 0x01, 0x01, 0x02}
 };
 
-static const uchar rmcbox[4][4] = {
+static const unsigned char rmcbox[4][4] = {
   {0x0E, 0x0B, 0x0D, 0x09},
   {0x09, 0x0E, 0x0B, 0x0D},
   {0x0D, 0x09, 0x0E, 0x0B},
   {0x0B, 0x0D, 0x09, 0x0E}
 };
 
-uchar rcon[11] = {0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
+unsigned char rcon[11] = {0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
 
 
 
 
-// The round constant word array, Rcon[i], contains the values given by
-// x to th e power (i-1) being powers of x (x is denoted as {02}) in the field GF(2^8)
-// Note that i starts at 1, not 0).
-// int rcon[255] = {
-
-// 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a,
-// 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39,
-// 0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a,
-// 0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8,
-// 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef,
-// 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc,
-// 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b,
-// 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3,
-// 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94,
-// 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20,
-// 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63, 0xc6, 0x97, 0x35,
-// 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd, 0x61, 0xc2, 0x9f,
-// 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb, 0x8d, 0x01, 0x02, 0x04,
-// 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63,
-// 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd,
-// 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb  };
-void print_arr(char *label, uchar * arr, int len)
+void print_arr(char *label, unsigned char * arr, int len)
 {
     printf("%s: ",label);
     for(int i=0;i<len;i++)
@@ -264,7 +237,7 @@ void substitute_bytes(block * state)
 
 void shift_rows(block* state)
 {
-  uchar temp;
+  unsigned char temp;
 
   // Rotate first row 1 columns to left  
   temp           = (*state)[0][1];
@@ -304,7 +277,7 @@ void shift_rows(block* state)
 //    }
 //    return c;
 // }
-uchar multiply(uchar x, uchar y)
+unsigned char multiply(unsigned char x, unsigned char y)
 {
   return (((y & 1) * x) ^
        ((y>>1 & 1) * xtime(x)) ^
@@ -316,8 +289,8 @@ uchar multiply(uchar x, uchar y)
 // MixColumns function mixes the columns of the state matrix
 void mix_columns(block* state)
 {
-  uint8_t i;
-  uint8_t Tmp, Tm, t;
+  unsigned char i;
+  unsigned char Tmp, Tm, t;
   for (i = 0; i < 4; ++i)
   {  
     t   = (*state)[i][0];
@@ -432,7 +405,7 @@ void mix_columns(block* state)
 //   word[3] = sbox[word[3]];
 // }
 
-void set_word(uchar * left, int lidx, uchar * right, int ridx)
+void set_word(unsigned char * left, int lidx, unsigned char * right, int ridx)
 {
   left[lidx + 0] = right[ridx + 0];
   left[lidx + 1] = right[ridx + 1];
@@ -440,10 +413,10 @@ void set_word(uchar * left, int lidx, uchar * right, int ridx)
   left[lidx + 3] = right[ridx + 3];
 }
 
-void expand_key(uchar * round_key, uchar * key)
+void expand_key(unsigned char * round_key, unsigned char * key)
 {
   int i, j, k;
-  uchar temp[4]; // Used for the column/row operations
+  unsigned char temp[4]; // Used for the column/row operations
   
   // The first round key is the key itself.
   for (i = 0; i < aes.num_key_words; ++i)
@@ -467,7 +440,7 @@ void expand_key(uchar * round_key, uchar * key)
 
     if (i % aes.num_key_words == 0)
     {
-      const uchar u8tmp = temp[0];
+      const unsigned char u8tmp = temp[0];
       temp[0] = temp[1];
       temp[1] = temp[2];
       temp[2] = temp[3];
@@ -499,10 +472,10 @@ void expand_key(uchar * round_key, uchar * key)
   }
 }
 
-void add_round_key(block *state, uchar *round_key, int round)
+void add_round_key(block *state, unsigned char *round_key, int round)
 {
   // static void AddRoundKey(uint8_t round, state_t* state, const uint8_t* RoundKey)
-  uchar i, j;
+  unsigned char i, j;
   for(i = 0; i < 4; ++i)
   {
     for (j = 0; j < 4; ++j)
@@ -515,74 +488,38 @@ void add_round_key(block *state, uchar *round_key, int round)
 
 
 
-void set_mode(int mode, int inverse, int is_decrypt)
+void set_mode(int mode, int inverse)
 {
-    if(!is_decrypt)
+    aes = (aes_mode){
+      mode,
+      4, // num_cols
+      10, // num_rnds
+      16, // key_len
+      176, // key_exp_len
+      4, // num_key_words
+      inverse
+    };
+    if(mode == 192)
     {
-        aes = (aes_mode){
-          mode,
-          4, // num_cols
-          10, // num_rnds
-          16, // key_len
-          176, // key_exp_len
-          4, // num_key_words
-          inverse
-        };
-    
-        if(mode == 192)
-        {
-          aes.num_cols = 5;
-          aes.num_rnds = 12;
-          aes.key_len = 24;
-          aes.key_exp_len = 208;
-          aes.num_key_words = 6;
-        }
-        if(mode == 256)
-        {
-          aes.num_cols = 6;
-          aes.num_rnds = 14;
-          aes.key_len = 32;
-          aes.key_exp_len = 240;
-          aes.num_key_words = 8;
-        }
+      aes.num_cols = 5;
+      aes.num_rnds = 12;
+      aes.key_len = 24;
+      aes.key_exp_len = 208;
+      aes.num_key_words = 6;
     }
-    else
+    if(mode == 256)
     {
-        aes2 = (aes_mode){
-          mode,
-          4, // num_cols
-          10, // num_rnds
-          16, // key_len
-          176, // key_exp_len
-          4, // num_key_words
-          inverse
-        };
-    
-        if(mode == 192)
-        {
-          aes2.num_cols = 5;
-          aes2.num_rnds = 12;
-          aes2.key_len = 24;
-          aes2.key_exp_len = 208;
-          aes2.num_key_words = 6;
-        }
-        if(mode == 256)
-        {
-          aes2.num_cols = 6;
-          aes2.num_rnds = 14;
-          aes2.key_len = 32;
-          aes2.key_exp_len = 240;
-          aes2.num_key_words = 8;
-        }
-        // aes.num_key_words = aes.key_exp_len / 32;
-        memcpy(&aes, &aes2, sizeof(aes2));
+      aes.num_cols = 6;
+      aes.num_rnds = 14;
+      aes.key_len = 32;
+      aes.key_exp_len = 240;
+      aes.num_key_words = 8;
     }
-     
 }
 
-void encrypt(block * state, uchar * round_key)
+void encrypt(block * state, unsigned char * round_key)
 {
-  uchar round = 0;
+  unsigned char round = 0;
   // Add the First round key to the state before starting the rounds.
   // print_state(state);
   add_round_key(state, round_key, 0); 
@@ -606,13 +543,13 @@ void encrypt(block * state, uchar * round_key)
   add_round_key(state, round_key, aes.num_rnds);
 }
 
-void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * output, int len, int is_decrypt)
+void aes_encrypt(int mode, unsigned char * key, unsigned char * iv, unsigned char * input, unsigned char * output, int len)
 {
-  uchar state[BLOCK_LEN];
+  unsigned char state[BLOCK_LEN];
   unsigned i;
   int bi;
-  set_mode(mode, FALSE, is_decrypt);
-  uchar round_key[512];
+  set_mode(mode, FALSE);
+  unsigned char round_key[512];
   expand_key(round_key, key);
   
   // print_arr("IV", iv, 16);
@@ -643,12 +580,16 @@ void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * outpu
   }
 }
 
-void decrypt(unsigned char cipher_key[32], unsigned char * ciphertext, unsigned char * decyphered_text)
+void aes_decrypt(int mode, unsigned char * key, unsigned char * iv, unsigned char * input, unsigned char * output, int len)
+//void decrypt(unsigned char cipher_key[32], unsigned char * ciphertext, unsigned char * decyphered_text)
 {
-  int i,j;
-  int round;
-  int inverse = TRUE;
-  /* To decrypt:
+
+  aes_encrypt(mode, key, iv, input, output, len);
+
+
+
+
+   /* To decrypt:
    *   apply the inverse operations of the encrypt routine,
    *   in opposite order
    *
