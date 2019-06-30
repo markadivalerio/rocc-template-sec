@@ -28,7 +28,11 @@ int main() {
     //YOUR CODE HERE: Invoke your AES acclerator, write the encrypted output of plaintext to enc_buf
     // encrypt(key[0], plaintext[0], iv[0], enc_buf);
     printf("Encrypted Ciphertext ");
-    aes_encrypt(256, key[0], iv, plaintext[0], enc_buf, 32, FALSE);
+    // rd, rs1, and rs2 are data
+    // rd_n, rs_1, and rs2_n are the register numbers to use
+    ROCC_INSTRUCTION_R_R_R(0, dummy_result, plaintext, enc_buf, 0);
+
+    // aes_encrypt(256, key[0], iv, plaintext[0], enc_buf, 32, FALSE);
     
     asm volatile ("fence");
 
