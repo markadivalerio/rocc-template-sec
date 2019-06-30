@@ -189,52 +189,6 @@ void substitute_bytes(block * state)
   }
 }
 
-
-// void shift_row(uchar * row, signed int delta)
-// //shifts single row left (inverse=false) or right (inverse=true)
-// {  
-//  uchar temp[4];
-//   int right = TRUE;
-//  if(delta == 0)
-//    return;
-
-//   if(delta < 0)
-//   {
-//     delta *= -1;
-//     right = FALSE;
-//   }
-  
-//  for(;delta>0;delta--)
-//  {
-//    if(right)
-//    {
-//      const uchar temp = row[3];
-//      row[3] = row[2];
-//      row[2] = row[1];
-//      row[1] = row[0];
-//      row[0] = temp;
-//    }
-//    else // left
-//    {
-//        const uchar temp = row[0];
-//         row[0] = row[1];
-//         row[1] = row[2];
-//         row[2] = row[3];
-//         row[3] = temp;
-//    }
-//  }
-// }
-
-// void shift_rows(block * state)
-// {
-//  printf("shift_rows ");
-//   signed int r;
-//   for(r = 1; r < 4; r++) // row 0 does not shift.
-//   {
-//       shift_row(state[r], r);
-//   }
-// }
-
 void shift_rows(block* state)
 {
   unsigned char temp;
@@ -270,61 +224,40 @@ void shift_rows(block* state)
     unsigned char c = 0;
     unsigned char d = b;
 
-   for (int i=0 ; i < 8 ; i++) {
-       if (a%2 == 1) c ^= d;
-       a /= 2;
+   for (int i=0 ; i < 8 ; i++)
+   {
+       if(a%2 == 1)
+	 c ^= d;
+       a = a / 2;
        d = xtime(d);
     }
     return c;
  }
-/*
-unsigned char multiply(unsigned char x, unsigned char y)
-{
-  return (((y & 1) * x) ^
-       ((y>>1 & 1) * xtime(x)) ^
-       ((y>>2 & 1) * xtime(xtime(x))) ^
-       ((y>>3 & 1) * xtime(xtime(xtime(x)))) ^
-       ((y>>4 & 1) * xtime(xtime(xtime(xtime(x)))))); // this last call to xtime() can be omitted
-  }*/
 
 // MixColumns function mixes the columns of the state matrix
 void mix_columns(block* state)
 {
   unsigned char i;
-  unsigned char Tmp, Tm, t;
+  unsigned char temp, Tm, t;
   for (i = 0; i < 4; ++i)
   {  
     t   = (*state)[i][0];
-    Tmp = (*state)[i][0] ^ (*state)[i][1] ^ (*state)[i][2] ^ (*state)[i][3] ;
-    Tm  = (*state)[i][0] ^ (*state)[i][1] ; Tm = xtime(Tm);  (*state)[i][0] ^= Tm ^ Tmp ;
-    Tm  = (*state)[i][1] ^ (*state)[i][2] ; Tm = xtime(Tm);  (*state)[i][1] ^= Tm ^ Tmp ;
-    Tm  = (*state)[i][2] ^ (*state)[i][3] ; Tm = xtime(Tm);  (*state)[i][2] ^= Tm ^ Tmp ;
-    Tm  = (*state)[i][3] ^ t ;              Tm = xtime(Tm);  (*state)[i][3] ^= Tm ^ Tmp ;
+    temp = (*state)[i][0] ^ (*state)[i][1] ^ (*state)[i][2] ^ (*state)[i][3];
+    Tm  = (*state)[i][0] ^ (*state)[i][1];
+    Tm = xtime(Tm);
+    (*state)[i][0] ^= Tm ^ temp;
+    Tm  = (*state)[i][1] ^ (*state)[i][2];
+    Tm = xtime(Tm);
+    (*state)[i][1] ^= Tm ^ temp;
+    Tm  = (*state)[i][2] ^ (*state)[i][3];
+    Tm = xtime(Tm);
+    (*state)[i][2] ^= Tm ^ temp;
+    Tm  = (*state)[i][3] ^ t;
+    Tm = xtime(Tm);
+    (*state)[i][3] ^= Tm ^ temp;
   }
 }
 
-
-// unsigned char mul_column(unsigned char col[4], int row, unsigned char mbox[4][4])
-// {
-//  unsigned char * temp[4];
-  
-//  unsigned char res = (
-//    (col[0] * mbox[row][0])
-//    + (col[1] * mbox[row][1])
-//    + (col[2] * mbox[row][2])
-//    + (col[3] * mbox[row][3]));
-//  if((res & 0x80) == 0)
-//  {
-//    res = res << 1;
-//    res = res ^ 0x00;
-//  }
-//  else
-//  {
-//    res = res << 1;
-//    res = res ^ 0x1b;
-//  }
-//  return res;
-// }
 
 // void mix_columns(unsigned char state[4][4], int inverse)
 // {
@@ -555,104 +488,8 @@ void aes_encrypt(int mode, unsigned char * key, unsigned char * iv, unsigned cha
 }
 
 void aes_decrypt(int mode, unsigned char * key, unsigned char * iv, unsigned char * input, unsigned char * output, int len)
-//void decrypt(unsigned char cipher_key[32], unsigned char * ciphertext, unsigned char * decyphered_text)
 {
-
-  aes_encrypt(mode, key, iv, input, output, len);
-
-
-
-
-   /* To decrypt:
-   *   apply the inverse operations of the encrypt routine,
-   *   in opposite order
-   *
-   * - AddRoundKey is equal to its inverse)
-   * - the inverse of SubBytes with table S is
-   *             SubBytes with the inverse table of S)
-   * - the inverse of Shiftrows is Shiftrows over
-   *       a suitable distance)*/
-
-  /* First the special round:
-   *   without InvMixColumns
-   *   with extra AddRoundKey
-  */
-//  unsigned char state[4][4];
-//  int iterations = sizeof(ciphertext)/4;
-/*  for(int i = 0; i < 4; ++i)
-  {
-        state[i][0] = ciphertext[i*4];
-    state[i][1] = ciphertext[i*4+1];
-    state[i][2] = ciphertext[i*4+2];
-    state[i][3] = ciphertext[i*4+3];
-  }*/
-  //unsigned char round_key[128];
-  //key_expansion3(cipher_key, round_key);
-
-        /* begin with a key addition*/
-//        key_expansion(cipher_key, expanded_key, 9);
-//  print_key(cipher_key);  
-//  add_round_key(state, expanded_key, 10);
-//  shift_rows(state, inverse);
-  /* ROUNDS-1 ordinary rounds*/
-/*  for(round = 9;round > 0; round--)
-  {
-    add_round_key(state, round_key, round);
-    mix_columns(state, inverse);
-    substitute_bytes(state, inverse);
-    shift_rows(state, inverse);
-                print_state(state, TRUE);
-  }
-*/
-  /* End with the extra key addition*/
-//  add_round_key(state, round_key, 0);
-//  print_state(state, TRUE);
+   // encrypt is the exact same as decrypt
+   aes_encrypt(mode, key, iv, input, output, len);
 }
-
-
-
-
-/*
-int main()
-{
-    uchar key[32] = {   0x60,0x3d,0xeb,0x10,0x15,0xca,0x71,0xbe,
-                        0x2b,0x73,0xae,0xf0,0x85,0x7d,0x77,0x81,
-                        0x1f,0x35,0x2c,0x07,0x3b,0x61,0x08,0xd7,
-                        0x2d,0x98,0x10,0xa3,0x09,0x14,0xdf,0xf4};
-    
-    uchar iv[16] = {0xf0,0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8,0xf9,0xfa,0xfb,0xfc,0xfd,0xfe,0xff};
-    uchar iv2[16] = {0xf0,0xf1,0xf2,0xf3,0xf4,0xf5,0xf6,0xf7,0xf8,0xf9,0xfa,0xfb,0xfc,0xfd,0xfe,0xff};
-    
-    uchar in[32] = {    0x6b,0xc1,0xbe,0xe2,0x2e,0x40,0x9f,0x96,
-                        0xe9,0x3d,0x7e,0x11,0x73,0x93,0x17,0x2a,
-                        0xae,0x2d,0x8a,0x57,0x1e,0x03,0xac,0x9c,
-                        0x9e,0xb7,0x6f,0xac,0x45,0xaf,0x8e,0x51};
-    uchar in2[32] = {    0x6b,0xc1,0xbe,0xe2,0x2e,0x40,0x9f,0x96,
-                        0xe9,0x3d,0x7e,0x11,0x73,0x93,0x17,0x2a,
-                        0xae,0x2d,0x8a,0x57,0x1e,0x03,0xac,0x9c,
-                        0x9e,0xb7,0x6f,0xac,0x45,0xaf,0x8e,0x51};
-    
-    uchar expected_out[32] = {   0x60,0x1e,0xc3,0x13,0x77,0x57,0x89,0xa5,
-                        0xb7,0xa7,0xf5,0x04,0xbb,0xf3,0xd2,0x28,
-                        0xf4,0x43,0xe3,0xca,0x4d,0x62,0xb5,0x9a,
-                        0xca,0x84,0xe9,0x90,0xca,0xca,0xf5,0xc5};
-    uchar out[32];
-    uchar out2[32];
-    
-    aes_encrypt(256, key, iv, in, out, 32, FALSE);
-    
-    // print_state((block*)out);
-    print_arr("Encrypted", out, 32);
-    
-    printf("\n\n");
-    
-    uchar iv3[16];
-    memcpy(iv3, out, 16);
-    aes_encrypt(256, key, iv2, out, out2, 32, TRUE);
-    
-    print_state((block*)out2);
-    
-}*/
-
-
 #endif
