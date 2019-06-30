@@ -28,7 +28,7 @@ int main() {
     //YOUR CODE HERE: Invoke your AES acclerator, write the encrypted output of plaintext to enc_buf
     // encrypt(key[0], plaintext[0], iv[0], enc_buf);
     printf("Encrypted Ciphertext ");
-    aes_encrypt(256, key, iv, plaintext, enc_buf, 32);
+    aes_encrypt(256, key, iv, plaintext, enc_buf, 32, FALSE);
     
     asm volatile ("fence");
 
@@ -40,7 +40,7 @@ int main() {
 
     //YOUR CODE HERE: Invoke your AES acclerator, write the decrypted output of enc_buf to decrypted_text
     printf("Decrypted plaintext ");
-    aes_encrypt(256, key, iv2, ciphertext, decrypted_text, 32);
+    aes_encrypt(256, key, iv2, ciphertext, decrypted_text, 32, FALSE);
     asm volatile ("fence");
     //DO NOT MODIFY
     duration = rdcycle() - initCycle;

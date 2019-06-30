@@ -69,7 +69,6 @@
 #define TRUE 1
 #define FALSE 0
 #define BLOCK_LEN 16
-#define xtime(x)   ((x<<1) ^ (((x>>7) & 1) * 0x1b))
 
 typedef unsigned char block[4][4];
 
@@ -80,15 +79,15 @@ typedef struct aes_mode {
   int key_len;
   int key_exp_len;
   int num_key_words;
-  int inverse;
+  int debug;
 } aes_mode;
 
 aes_mode aes;//global aes
 
 void print_arr(char *label, unsigned char * arr, int len);
 void print_state(block *state);
-void aes_encrypt(int mode, unsigned char * key, unsigned char * iv, unsigned char * input, unsigned char * output, int len);
-//void decrypt(unsigned char cipher_key[32], unsigned char *ciphertext, unsigned char * deciphered_text);
+void aes_encrypt(int mode, unsigned char * key, unsigned char * iv, unsigned char * input, unsigned char * output, int len, int debug_flag);
+void aes_decrypt(int mode, unsigned char * key, unsigned char * iv, unsigned char * input, unsigned char * output, int len, int debug_flag);
 
 
 static const unsigned char sbox[256] =   {
@@ -109,6 +108,9 @@ static const unsigned char sbox[256] =   {
 0x70, 0x3e, 0xb5, 0x66, 0x48, 0x03, 0xf6, 0x0e, 0x61, 0x35, 0x57, 0xb9, 0x86, 0xc1, 0x1d, 0x9e, //D
 0xe1, 0xf8, 0x98, 0x11, 0x69, 0xd9, 0x8e, 0x94, 0x9b, 0x1e, 0x87, 0xe9, 0xce, 0x55, 0x28, 0xdf, //E
 0x8c, 0xa1, 0x89, 0x0d, 0xbf, 0xe6, 0x42, 0x68, 0x41, 0x99, 0x2d, 0x0f, 0xb0, 0x54, 0xbb, 0x16 }; //F
+
+/*
+NOT NEEDED FOR CTR
  
 static const unsigned char rsbox[256] = {
 0x52, 0x09, 0x6a, 0xd5, 0x30, 0x36, 0xa5, 0x38, 0xbf, 0x40, 0xa3, 0x9e, 0x81, 0xf3, 0xd7, 0xfb, //0
@@ -128,24 +130,19 @@ static const unsigned char rsbox[256] = {
 0xa0, 0xe0, 0x3b, 0x4d, 0xae, 0x2a, 0xf5, 0xb0, 0xc8, 0xeb, 0xbb, 0x3c, 0x83, 0x53, 0x99, 0x61, //E
 0x17, 0x2b, 0x04, 0x7e, 0xba, 0x77, 0xd6, 0x26, 0xe1, 0x69, 0x14, 0x63, 0x55, 0x21, 0x0c, 0x7d }; //F
 
-static const unsigned char mcbox[4][4] = {
-  {0x02, 0x03, 0x01, 0x01},
-  {0x01, 0x02, 0x03, 0x01},
-  {0x01, 0x01, 0x02, 0x03},
-  {0x03, 0x01, 0x01, 0x02}
-};
-
-static const unsigned char rmcbox[4][4] = {
-  {0x0E, 0x0B, 0x0D, 0x09},
-  {0x09, 0x0E, 0x0B, 0x0D},
-  {0x0D, 0x09, 0x0E, 0x0B},
-  {0x0B, 0x0D, 0x09, 0x0E}
-};
+*/
 
 unsigned char rcon[11] = {0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x36};
 
 
-
+void debug(char * label, block * state)
+{
+    if(aes.debug)
+    {
+        printf("\n%s ", label);
+        print_state(state);
+    }
+}
 
 void print_arr(char *label, unsigned char * arr, int len)
 {
@@ -181,9 +178,9 @@ void substitute_bytes(block * state)
   {
     for(c = 0; c < 4; c++)
     {
-      if(aes.inverse)
-        (*state)[r][c] = rsbox[(*state)[r][c]];
-      else
+      //if(aes.inverse)
+      //  (*state)[r][c] = rsbox[(*state)[r][c]];
+      //else
         (*state)[r][c] = sbox[(*state)[r][c]];
     }
   }
@@ -217,8 +214,12 @@ void shift_rows(block* state)
   (*state)[1][3] = temp;
 }
 
+unsigned char xtime(unsigned char x)
+{
+  return ((x<<1) ^ (((x>>7) & 1) * 0x1b));
+}
 
- unsigned char multiply(unsigned char a, unsigned char b) {
+unsigned char multiply(unsigned char a, unsigned char b) {
     int i;
 
     unsigned char c = 0;
@@ -258,67 +259,6 @@ void mix_columns(block* state)
   }
 }
 
-
-// void mix_columns(unsigned char state[4][4], int inverse)
-// {
-//  unsigned char mbox[4][4];
-//  if(inverse)
-//    memcpy(mbox, rmc_box, sizeof(mbox));
-//  else
-//    memcpy(mbox, mc_box, sizeof(mbox)); 
-//  printf("mix_columns");
-//  unsigned char temp[4][4] = {{0}};
-//  int r, c;
-//  for(c=0;c<4;c++)
-//  {
-//      unsigned char temp[4];
-//      mix_columns2(state[0][c], state[1][c], state[2][c], state[3][c], temp);
-//      state[0][c] = temp[0];
-//      state[1][c] = temp[1];
-//      state[2][c] = temp[2];
-//      state[3][c] = temp[3];
-//  }
-//  /*printf("before ");
-//  print_state(state, TRUE);
-//  for(c = 0; c < 4; c++)
-//  {
-//    unsigned char col[4] = {state[0][c], state[1][c], state[2][c], state[3][c]};
-//    for(r = 0; r < 4; r++)
-//    {
-//      temp[r][c] = mul_column(col, r, mbox);
-//    }
-//  }
-//  memcpy(state, temp, sizeof(temp));
-  
-//  printf("after ");
-//  print_state(state, TRUE);*/
-// }
-
-// void rotate_word(uchar * word)
-// {
-//   const uchar temp = word[0];
-//   word[0] = word[1];
-//   word[1] = word[2];
-//   word[2] = word[3];
-//   word[3] = temp;
-// }
-
-// void sub_word(uchar * word)
-// {
-//   word[0] = sbox[word[0]];
-//   word[1] = sbox[word[1]];
-//   word[2] = sbox[word[2]];
-//   word[3] = sbox[word[3]];
-// }
-
-void set_word(unsigned char * left, int lidx, unsigned char * right, int ridx)
-{
-  left[lidx + 0] = right[ridx + 0];
-  left[lidx + 1] = right[ridx + 1];
-  left[lidx + 2] = right[ridx + 2];
-  left[lidx + 3] = right[ridx + 3];
-}
-
 void expand_key(unsigned char * round_key, unsigned char * key)
 {
   int i, j, k;
@@ -346,29 +286,32 @@ void expand_key(unsigned char * round_key, unsigned char * key)
 
     if (i % aes.num_key_words == 0)
     {
+      // ROTATE
       const unsigned char u8tmp = temp[0];
       temp[0] = temp[1];
       temp[1] = temp[2];
       temp[2] = temp[3];
       temp[3] = u8tmp;
 
-      // sub_word(temp);
+      // SUBSTITUTE
       temp[0] = sbox[temp[0]];
       temp[1] = sbox[temp[1]];
       temp[2] = sbox[temp[2]];
       temp[3] = sbox[temp[3]];
+
 
       temp[0] ^= rcon[i/aes.num_key_words];
     }
 
-    // if(aes.mode == 256 && i % aes.num_key_words == 4)
     if(i % 8 == 4)
     {
+      // SUBSTITUTE
       temp[0] = sbox[temp[0]];
       temp[1] = sbox[temp[1]];
       temp[2] = sbox[temp[2]];
       temp[3] = sbox[temp[3]];
     }
+
     j = i * 4;
     k = (i - aes.num_key_words) * 4;
     round_key[j + 0] = round_key[k + 0] ^ temp[0];
@@ -380,7 +323,6 @@ void expand_key(unsigned char * round_key, unsigned char * key)
 
 void add_round_key(block *state, unsigned char *round_key, int round)
 {
-  // static void AddRoundKey(uint8_t round, state_t* state, const uint8_t* RoundKey)
   unsigned char i, j;
   for(i = 0; i < 4; ++i)
   {
@@ -392,9 +334,7 @@ void add_round_key(block *state, unsigned char *round_key, int round)
 }
 
 
-
-
-void set_mode(int mode, int inverse)
+void set_mode(int mode, int debug)
 {
     aes = (aes_mode){
       mode,
@@ -403,7 +343,7 @@ void set_mode(int mode, int inverse)
       16, // key_len
       176, // key_exp_len
       4, // num_key_words
-      inverse
+      debug
     };
     if(mode == 192)
     {
@@ -421,51 +361,64 @@ void set_mode(int mode, int inverse)
       aes.key_exp_len = 240;
       aes.num_key_words = 8;
     }
+    if(debug)
+    {
+	printf("\nAES CTR MODE:\n");
+	printf("mode: %d      num_cols: %d        num_rnds: %d\n", aes.mode, aes.num_cols, aes.num_rnds);
+	printf("key_len: %d   key_exp_len: %d     num_key_words: %d\n", aes.key_len, aes.key_exp_len, aes.num_key_words);
+    }
 }
 
 void encrypt(block * state, unsigned char * round_key)
 {
   unsigned char round = 0;
-  // Add the First round key to the state before starting the rounds.
-  // print_state(state);
+  debug("Initial Value", state);
   add_round_key(state, round_key, 0); 
-  // print_state(state);
-  // There will be Nr rounds.
-  // The first Nr-1 rounds are identical.
-  // These Nr-1 rounds are executed in the loop below.
   for(round = 1; round < aes.num_rnds; ++round)
   {
+    if(aes.debug)
+    {
+	printf("Round %d ", round);
+        print_arr("Round Key ", round_key, aes.key_len);
+    }
+    debug("After Adding (Previous) Round Key", state);
     substitute_bytes(state);
+    debug("After Substitute", state);
     shift_rows(state);
+    debug("After Shifting Rows", state);
     mix_columns(state);
+    debug("After Mixing Columns", state);
     add_round_key(state, round_key, round);
-    
   }
   
   // The last round is given below.
   // The MixColumns function is not here in the last round.
+  debug("Final start", state);
   substitute_bytes(state);
+  debug("After Final Substitute", state);
   shift_rows(state);
+  debug("After Final Shift Rows", state);
   add_round_key(state, round_key, aes.num_rnds);
+  debug("After Final Add Round Key", state);
 }
 
-void aes_encrypt(int mode, unsigned char * key, unsigned char * iv, unsigned char * input, unsigned char * output, int len)
+void aes_encrypt(int mode, unsigned char * key, unsigned char * iv, unsigned char * input, unsigned char * output, int len, int debug_flag)
 {
   unsigned char state[BLOCK_LEN];
   unsigned i;
   int bi;
-  set_mode(mode, FALSE);
+  set_mode(mode, debug_flag);
   unsigned char round_key[512];
+  if(aes.debug)
+    print_arr("cipher key",key, len);
   expand_key(round_key, key);
-  
-  // print_arr("IV", iv, 16);
-  // print_arr("Round Key:", round_key, 32);
+  if(aes.debug)
+    print_arr("After expand round key ", round_key, len); 
   for (i = 0, bi = BLOCK_LEN; i < len; ++i, ++bi)
   {
     if (bi == BLOCK_LEN) // we need to regen xor compliment in buffer 
     {
       memcpy(state, iv, BLOCK_LEN);
-      //print_state((block *)state);
       encrypt((block*)state, round_key);
        // Increment Iv and handle overflow
       for (bi = (BLOCK_LEN - 1); bi >= 0; --bi)
@@ -483,13 +436,14 @@ void aes_encrypt(int mode, unsigned char * key, unsigned char * iv, unsigned cha
     }
 
     output[i] = (input[i] ^ state[bi]);
+    debug("After XOR state with input", (block *) output);
   }
   print_state((block *)output);
 }
 
-void aes_decrypt(int mode, unsigned char * key, unsigned char * iv, unsigned char * input, unsigned char * output, int len)
+void aes_decrypt(int mode, unsigned char * key, unsigned char * iv, unsigned char * input, unsigned char * output, int len, int debug_flag)
 {
    // encrypt is the exact same as decrypt
-   aes_encrypt(mode, key, iv, input, output, len);
+   aes_encrypt(mode, key, iv, input, output, len, debug_flag);
 }
 #endif
