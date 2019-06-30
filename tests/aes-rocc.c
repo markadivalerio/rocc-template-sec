@@ -30,9 +30,9 @@ int main() {
     printf("Encrypted Ciphertext ");
     // rd, rs1, and rs2 are data
     // rd_n, rs_1, and rs2_n are the register numbers to use
-    ROCC_INSTRUCTION_R_R_R(0, dummy_result, plaintext, enc_buf, 0);
-
-    // aes_encrypt(256, key[0], iv, plaintext[0], enc_buf, 32, FALSE);
+    // ROCC_INSTRUCTION_R_R_R(0, dummy_result, plaintext, enc_buf, 0);
+    // ROCC_INSTRUCTION(0, dummy_result, plaintext, enc_buf, 0);
+    aes_encrypt(256, key[0], iv, plaintext[0], enc_buf, 32, FALSE);
     
     asm volatile ("fence");
 
@@ -45,6 +45,8 @@ int main() {
     //YOUR CODE HERE: Invoke your AES acclerator, write the decrypted output of enc_buf to decrypted_text
     printf("\nDecrypted plaintext ");
     aes_encrypt(256, key[0], iv2, enc_buf, decrypted_text, 32, FALSE);
+    //ROCC_INSTRUCTION_R_R_R(0, dummy_result, enc_buf, decrypted_text, 0);
+    //ROCC_INSTRUCTION(0, dummy_result, enc_buf, decrypted_text, 0);
     asm volatile ("fence");
     //DO NOT MODIFY
     duration = rdcycle() - initCycle;

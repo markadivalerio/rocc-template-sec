@@ -26,6 +26,7 @@ public:
 
   reg_t custom0(rocc_insn_t insn, reg_t xs1, reg_t xs2)
   {
+    printf("%d", insn.funct);
     switch (insn.funct)
     {
       case 0: // setup msg and hash addr
