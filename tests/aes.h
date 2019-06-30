@@ -89,7 +89,7 @@ aes_mode aes2;//global aes
 
 
 
-
+void print_arr(char *label, uchar * arr, int len);
 void print_state(block *state);
 void aes_encrypt(int mode, uchar * key, uchar * iv, uchar * input, uchar * output, int len, int is_decrypt);
 //void decrypt(unsigned char cipher_key[32], unsigned char *ciphertext, unsigned char * deciphered_text);
@@ -174,11 +174,35 @@ uchar rcon[11] = {0x8d, 0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1B, 0x
 // 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36, 0x6c, 0xd8, 0xab, 0x4d, 0x9a, 0x2f, 0x5e, 0xbc, 0x63,
 // 0xc6, 0x97, 0x35, 0x6a, 0xd4, 0xb3, 0x7d, 0xfa, 0xef, 0xc5, 0x91, 0x39, 0x72, 0xe4, 0xd3, 0xbd,
 // 0x61, 0xc2, 0x9f, 0x25, 0x4a, 0x94, 0x33, 0x66, 0xcc, 0x83, 0x1d, 0x3a, 0x74, 0xe8, 0xcb  };
+void print_arr(char *label, uchar * arr, int len)
+{
+    printf("%s: ",label);
+    for(int i=0;i<len;i++)
+    {
+        printf("%x", arr[i]);
+        if(i%4 == 3)
+          printf(" ");
+    }
+    printf("\n");
+}
 
+void print_state(block * state)
+{
+    int i,j;
+    printf("State:\n");
+    for(i=0;i<4;i++)
+    {
+      for(j=0;j<4;j++)
+      { 
+        printf("%x ", (*state)[i][j] & 0xFF);
+      }
+      printf("\n");
+    }
+    printf("\n");
+}
 
 void substitute_bytes(block * state)
 {
-  
   int c, r;
   for(r = 0; r < 4; r++)
   {
@@ -489,31 +513,7 @@ void add_round_key(block *state, uchar *round_key, int round)
 }
 
 
-void print_state(block * state)
-{
-    int i,j;
-    printf("State:\n");
-    for(i=0;i<4;i++)
-    {
-      for(j=0;j<4;j++)
-      { 
-        printf("%x ", (*state)[i][j] & 0xFF);
-      }
-      printf("\n");
-    }
-    printf("\n");
-}
 
-void print_key(uchar *key)
-{
-    printf("Key: ");
-    int i=0;
-    for(i=0;i<sizeof(key);i++)
-    {
-      printf("%x ", key[i] & 0xFF);
-    }
-    printf("\n");
-}
 
 void set_mode(int mode, int inverse, int is_decrypt)
 {
@@ -695,15 +695,7 @@ void decrypt(unsigned char cipher_key[32], unsigned char * ciphertext, unsigned 
 }
 
 
-void print_arr(char *label, uchar * arr, int len)
-{
-    printf("%s: ",label);
-    for(int i=0;i<len;i++)
-    {
-        printf("%x ", arr[i]);
-    }
-    printf("\n");
-}
+
 
 /*
 int main()
