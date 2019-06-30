@@ -71,15 +71,15 @@ int main() {
     //END DO NOT MODIFY
 
     /* YOUR CODE HERE: Invoke your RSA acclerator, write the decrypted output of ciphertext to decrypted */
-    unsigned char decrypted2[7];
-    decrypt(rsa, encrypted, decrypted_text);
+    unsigned char decrypted64[7];
+    decrypt(rsa, encrypted, decrypted64);
     asm volatile ("fence");
 
     //DO NOT MODIFY
     duration = rdcycle() - initCycle;
     printf("RSA Decryption took %llu cycles!\n", duration);
 
-    //char *decrypted_text = (char*)&decrypted;
+    char *decrypted_text = (char*)&decrypted64;
     // printf("decrypted=%s\n", decrypted2);
     // assert(strcmp(plaintext, decrypted2) == 0);
     printf("decrypted=%s\n", decrypted_text);
