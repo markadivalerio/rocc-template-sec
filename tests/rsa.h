@@ -104,7 +104,7 @@ uint128 u128_shift_right(uint128 num)
 {
     num.lo >>= 1;
     if(u64_is_even(num.hi) == FALSE)
-        num.lo = num.lo | (0x1 << 63);
+        num.lo = num.lo | (0x8000000000000000ULL);
     num.hi >>= 1;
     return num;
 }
